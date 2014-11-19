@@ -7,6 +7,7 @@ from unittest2 import TestCase
 
 
 SITEMAP = get_asset('sitemap.xml')
+SITEMAP_GZ = get_asset('sitemap.xml.gz')
 
 
 class TestGatherer(TestCase):
@@ -42,3 +43,19 @@ class TestGatherer(TestCase):
         gatherer = URLGatherer('http://example.org/')
         with self.assertRaises(FtwCrawlerException):
             gatherer.fetch_sitemap()
+
+    @patch('requests.get')
+    def test_decompresses_gzipped_sitemap(self, request):
+        not_found = MockResponse(status_code=404)
+        found_gz = MockResponse(status_code=200, content=SITEMAP_GZ,
+                                headers={'Content-Type': 'application/x-gzip'})
+        responses = {'http://example.org/sitemap.xml': not_found,
+                     'http://example.org/sitemap.xml.gz': found_gz}
+
+        request.side_effect = lambda url: responses[url]
+        gatherer = URLGatherer('http://example.org/')
+        sitemap_xml = gatherer.fetch_sitemap()
+
+        self.assertEquals(
+            SITEMAP, sitemap_xml,
+            "SITEMAP_GZ should have been decompressed to SITEMAP")

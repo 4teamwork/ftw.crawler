@@ -1,5 +1,8 @@
 from urlparse import urljoin
+from urlparse import urlsplit
 from ftw.crawler.exceptions import FtwCrawlerException
+import gzip
+import io
 import logging
 import requests
 
@@ -19,7 +22,28 @@ class URLGatherer(object):
         for sm_name in SITEMAP_NAMES:
             url = urljoin(self.site_url, sm_name)
             response = requests.get(url)
+
             if response.status_code == 200:
+                if self.is_gzipped(response):
+                    return self.gunzip(response.content)
                 return response.content
+
         raise FtwCrawlerException(
             "No sitemap could be found for {}!".format(self.site_url))
+
+    def is_gzipped(self, response):
+        """Determine if a response's content is gzipped.
+
+        This only considers the Content-Type header and the filename, NOT
+        HTTP compression indicated by the Content-Encoding header, which is
+        handled transparently by the `requests` module.
+        """
+        content_type = response.headers.get('Content-Type')
+        path = urlsplit(response.request.url).path
+        return content_type == 'application/x-gzip' or path.endswith('.gz')
+
+    def gunzip(self, content):
+        """Decompress a gzipped bytestring.
+        """
+        f = gzip.GzipFile(mode='rb', fileobj=io.BytesIO(content))
+        return f.read()

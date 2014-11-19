@@ -5,6 +5,7 @@ version = '1.0.dev0'
 
 tests_require = [
     'unittest2',
+    'mock',
 ]
 
 setup(name='ftw.crawler',
@@ -33,6 +34,7 @@ setup(name='ftw.crawler',
 
       install_requires=[
           'setuptools',
+          'requests',
       ],
 
       tests_require=tests_require,

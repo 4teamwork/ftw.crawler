@@ -1,6 +1,7 @@
+from ftw.crawler.exceptions import FtwCrawlerException
+from ftw.crawler.utils import get_content_type
 from urlparse import urljoin
 from urlparse import urlsplit
-from ftw.crawler.exceptions import FtwCrawlerException
 import gzip
 import io
 import logging
@@ -38,7 +39,7 @@ class URLGatherer(object):
         HTTP compression indicated by the Content-Encoding header, which is
         handled transparently by the `requests` module.
         """
-        content_type = response.headers.get('Content-Type')
+        content_type = get_content_type(response.headers.get('Content-Type'))
         path = urlsplit(response.request.url).path
         return content_type == 'application/x-gzip' or path.endswith('.gz')
 

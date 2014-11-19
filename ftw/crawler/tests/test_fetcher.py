@@ -31,3 +31,15 @@ class TestResourceFetcher(TestCase):
         fetcher = ResourceFetcher(url_info, resource_file)
         with self.assertRaises(FetchingError):
             fetcher.fetch()
+
+    @patch('requests.get')
+    def test_doesnt_choke_on_charset_in_content_type(self, request):
+        request.return_value = MockResponse(
+            content='', headers={'Content-Type': 'text/html; charset=utf-8'})
+        resource_file = MockFile()
+
+        url_info = {'loc': 'http://example.org/'}
+        fetcher = ResourceFetcher(url_info, resource_file)
+        _, content_type = fetcher.fetch()
+
+        self.assertEquals('text/html', content_type)

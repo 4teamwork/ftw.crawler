@@ -59,3 +59,11 @@ class TestGatherer(TestCase):
         self.assertEquals(
             SITEMAP, sitemap_xml,
             "SITEMAP_GZ should have been decompressed to SITEMAP")
+
+    @patch('requests.get')
+    def test_doesnt_choke_on_charset_in_content_type(self, request):
+        request.return_value = MockResponse(
+            content='',
+            headers={'Content-Type': 'text/html; charset=utf-8'})
+        gatherer = URLGatherer('http://example.org/')
+        self.assertEquals('', gatherer.fetch_sitemap())

@@ -1,4 +1,5 @@
 from ftw.crawler.exceptions import FetchingError
+from ftw.crawler.utils import get_content_type
 import requests
 
 
@@ -21,5 +22,5 @@ class ResourceFetcher(object):
         finally:
             self.resource_file.close()
 
-        content_type = response.headers.get('Content-Type')
+        content_type = get_content_type(response.headers.get('Content-Type'))
         return self.resource_file.name, content_type

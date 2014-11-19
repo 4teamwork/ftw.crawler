@@ -41,5 +41,7 @@ setup(name='ftw.crawler',
       extras_require=dict(tests=tests_require),
 
       entry_points='''
+      [console_scripts]
+      crawl = ftw.crawler.main:main
       ''',
       )

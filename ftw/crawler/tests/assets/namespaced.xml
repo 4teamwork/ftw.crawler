@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.example.org/"
+      xmlns:foo="http://www.example.org/foo">
+
+    <node xmlns:bar="http://www.example.org/foo">
+        <node>Text</node>
+    </node>
+
+</root>

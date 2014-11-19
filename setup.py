@@ -35,6 +35,7 @@ setup(name='ftw.crawler',
       install_requires=[
           'setuptools',
           'requests',
+          'lxml',
       ],
 
       tests_require=tests_require,

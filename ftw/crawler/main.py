@@ -1,4 +1,5 @@
-from ftw.crawler.config import get_config
+from ftw.crawler import parse_args
+from ftw.crawler.configuration import get_config
 from ftw.crawler.fetcher import ResourceFetcher
 from ftw.crawler.gatherer import URLGatherer
 from ftw.crawler.sitemap import SitemapParser
@@ -14,15 +15,14 @@ def mktmp(tempdir):
     return tempfile.NamedTemporaryFile(dir=tempdir, delete=False)
 
 
-def crawl_and_index(tempdir):
-    config = get_config()
-    for site_url in config['sites']:
-        gatherer = URLGatherer(site_url)
+def crawl_and_index(tempdir, config):
+    for site in config.sites:
+        gatherer = URLGatherer(site.url)
         sitemap_xml = gatherer.fetch_sitemap()
         sitemap = SitemapParser(sitemap_xml)
         url_infos = sitemap.get_urls()
 
-        log.info("URLs for {}:".format(site_url))
+        log.info("URLs for {}:".format(site.url))
         for url_info in url_infos:
             log.info("{} {}".format(url_info['loc'], str(url_info)))
 
@@ -36,10 +36,13 @@ def crawl_and_index(tempdir):
 
 
 def main():
+    args = parse_args()
+    config = get_config(args)
+
     tempdir = tempfile.mkdtemp(prefix='ftw.crawler_')
     log.debug("Using temporary directory {}".format(tempdir))
     try:
-        crawl_and_index(tempdir)
+        crawl_and_index(tempdir, config)
     finally:
         shutil.rmtree(tempdir)
 

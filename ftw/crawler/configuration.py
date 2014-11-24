@@ -11,9 +11,10 @@ def get_config(args):
 
 class Config(object):
 
-    def __init__(self, sites, tika, fields):
+    def __init__(self, sites, tika, solr, fields):
         self.sites = sites
         self.tika = tika
+        self.solr = solr
         self.fields = fields
 
 

@@ -4,6 +4,7 @@ from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.fetcher import ResourceFetcher
 from ftw.crawler.gatherer import URLGatherer
 from ftw.crawler.sitemap import SitemapParser
+from ftw.crawler.solr import SolrConnector
 from ftw.crawler.tika import TikaConverter
 import logging
 import os
@@ -19,6 +20,8 @@ def mktmp(tempdir):
 
 
 def crawl_and_index(tempdir, config):
+    solr = SolrConnector(config.solr)
+
     for site in config.sites:
         gatherer = URLGatherer(site.url)
         sitemap_xml = gatherer.fetch_sitemap()
@@ -42,6 +45,11 @@ def crawl_and_index(tempdir, config):
                 field_values = engine.extract_field_values()
                 print field_values
             os.unlink(resource_fn)
+
+            log.info("Indexing {} into solr.".format(url_info['loc']))
+            document = field_values.copy()
+            document['UID'] = url_info['loc']
+            solr.index(document)
 
             print
         print

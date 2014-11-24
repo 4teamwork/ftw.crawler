@@ -3,7 +3,9 @@ import logging
 import sys
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(levelname)-10s %(module)-16s %(message)s')
 
 
 def parse_args(argv=None):

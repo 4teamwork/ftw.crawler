@@ -10,6 +10,7 @@ CONFIG = Config(
         Site('https://www.dropbox.com/'),
     ],
     tika='http://localhost:9998/',
+    solr='http://localhost:8983/solr',
     fields=[
         Field('Title',
               extractors=[TitleExtractor()],

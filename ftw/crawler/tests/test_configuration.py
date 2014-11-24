@@ -16,19 +16,22 @@ class TestConfig(TestCase):
     def setUp(self):
         self.site = Site('http://example.org')
         self.tika = 'http://localhost:9998'
+        self.solr = 'http://localhost:8983/solr'
         self.field = Field('foo', extractors=[], type_=str)
 
+        self.config = Config([self.site], self.tika, self.solr, [self.field])
+
     def test_config_stores_sites(self):
-        config = Config([self.site], self.tika, [self.field])
-        self.assertEquals([self.site], config.sites)
+        self.assertEquals([self.site], self.config.sites)
 
     def test_config_stores_tika(self):
-        config = Config([self.site], self.tika, [self.field])
-        self.assertEquals(self.tika, config.tika)
+        self.assertEquals(self.tika, self.config.tika)
+
+    def test_config_stores_solr(self):
+        self.assertEquals(self.solr, self.config.solr)
 
     def test_config_stores_fields(self):
-        config = Config([self.site], self.tika, [self.field])
-        self.assertEquals([self.field], config.fields)
+        self.assertEquals([self.field], self.config.fields)
 
 
 class TestSite(TestCase):

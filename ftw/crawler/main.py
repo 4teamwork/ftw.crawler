@@ -1,9 +1,12 @@
 from ftw.crawler import parse_args
 from ftw.crawler.configuration import get_config
+from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.fetcher import ResourceFetcher
 from ftw.crawler.gatherer import URLGatherer
 from ftw.crawler.sitemap import SitemapParser
+from ftw.crawler.tika import TikaConverter
 import logging
+import os
 import shutil
 import tempfile
 
@@ -30,6 +33,15 @@ def crawl_and_index(tempdir, config):
                 fetcher = ResourceFetcher(url_info, resource_file)
                 resource_fn, content_type = fetcher.fetch()
             log.info("Resource saved to {}".format(resource_fn))
+
+            with open(resource_fn) as resource_file:
+                engine = ExtractionEngine(
+                    config, resource_file, content_type=content_type,
+                    filename='', fields=config.fields,
+                    converter=TikaConverter(config.tika))
+                field_values = engine.extract_field_values()
+                print field_values
+            os.unlink(resource_fn)
 
             print
         print

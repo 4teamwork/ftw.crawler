@@ -11,11 +11,21 @@ def get_config(args):
 
 class Config(object):
 
-    def __init__(self, sites):
+    def __init__(self, sites, tika, fields):
         self.sites = sites
+        self.tika = tika
+        self.fields = fields
 
 
 class Site(object):
 
     def __init__(self, url):
         self.url = url
+
+
+class Field(object):
+
+    def __init__(self, name, extractors, type_):
+        self.name = name
+        self.extractors = extractors
+        self.type_ = type_

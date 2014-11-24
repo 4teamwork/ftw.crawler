@@ -1,3 +1,4 @@
+from ftw.crawler.metadata import SimpleMetadata
 import csv
 import io
 import logging
@@ -27,4 +28,5 @@ class TikaConverter(object):
 
         csv_file = io.BytesIO(response.content)
         csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
-        return dict(iter(csv_reader))
+        metadata = dict(iter(csv_reader))
+        return SimpleMetadata(metadata)

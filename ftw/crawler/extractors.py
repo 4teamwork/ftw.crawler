@@ -15,13 +15,20 @@ class TextExtractor(Extractor):
     """
 
 
+class URLInfoExtractor(Extractor):
+    """Base class for all extractors that extract data from the sitemap's
+    <urlinfo /> structure.
+    """
+
+
 class ExtractionEngine(object):
 
-    extractor_types = (MetadataExtractor, TextExtractor)
+    extractor_types = (MetadataExtractor, TextExtractor, URLInfoExtractor)
 
-    def __init__(self, config, fileobj, content_type, filename,
+    def __init__(self, config, url_info, fileobj, content_type, filename,
                  fields, converter):
         self.config = config
+        self.url_info = url_info
         self.fileobj = fileobj
         self.content_type = content_type
         self.filename = filename
@@ -36,9 +43,9 @@ class ExtractionEngine(object):
     def _unkown_extractor_type(self, extractor):
         cls = extractor.__class__
         raise TypeError(
-            "Unknown extractor type for '{}' - must inherit from either "
-            "MetadataExtractor or TextExtractor. "
-            "(Base classes: {})".format(cls, cls.__bases__))
+            "Unknown extractor type for '{}' - must inherit from at least one "
+            "of {}. (Current base classes: {})".format(
+                ExtractionEngine.extractor_types, cls, cls.__bases__))
 
     def extract_field_values(self):
         field_values = {}
@@ -48,6 +55,8 @@ class ExtractionEngine(object):
                     extractor.metadata = self.metadata
                 if isinstance(extractor, TextExtractor):
                     extractor.text = self.text
+                if isinstance(extractor, URLInfoExtractor):
+                    extractor.url_info = self.url_info
 
                 if not isinstance(extractor, ExtractionEngine.extractor_types):
                     self._unkown_extractor_type(extractor)
@@ -62,6 +71,12 @@ class PlainTextExtractor(TextExtractor):
 
     def extract_value(self):
         return self.text
+
+
+class URLExtractor(URLInfoExtractor):
+
+    def extract_value(self):
+        return self.url_info.get('loc')
 
 
 class TitleExtractor(MetadataExtractor):

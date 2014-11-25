@@ -39,7 +39,7 @@ def crawl_and_index(tempdir, config):
 
             with open(resource_fn) as resource_file:
                 engine = ExtractionEngine(
-                    config, resource_file, content_type=content_type,
+                    config, url_info, resource_file, content_type=content_type,
                     filename='', fields=config.fields,
                     converter=TikaConverter(config.tika))
                 field_values = engine.extract_field_values()

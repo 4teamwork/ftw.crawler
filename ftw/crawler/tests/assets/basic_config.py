@@ -3,6 +3,7 @@ from ftw.crawler.configuration import Field
 from ftw.crawler.configuration import Site
 from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import TitleExtractor
+from ftw.crawler.extractors import URLExtractor
 
 
 CONFIG = Config(
@@ -13,6 +14,8 @@ CONFIG = Config(
     tika='http://localhost:9998/',
     solr='http://localhost:8983/solr',
     fields=[
+        Field('getRemoteUrl',
+              extractors=[URLExtractor()]),
         Field('SearchableText',
               extractors=[PlainTextExtractor()]),
         Field('Title',

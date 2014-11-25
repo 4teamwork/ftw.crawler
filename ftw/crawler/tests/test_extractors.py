@@ -7,6 +7,8 @@ from ftw.crawler.extractors import MetadataExtractor
 from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import TextExtractor
 from ftw.crawler.extractors import TitleExtractor
+from ftw.crawler.extractors import URLExtractor
+from ftw.crawler.extractors import URLInfoExtractor
 from ftw.crawler.tests.helpers import MockConverter
 from mock import MagicMock
 from pkg_resources import resource_filename
@@ -16,7 +18,7 @@ from unittest2 import TestCase
 BASIC_CONFIG = resource_filename('ftw.crawler.tests.assets', 'basic_config.py')
 
 
-class ExampleExtractor(MetadataExtractor):
+class ExampleMetadataExtractor(MetadataExtractor):
 
     def extract_value(self):
         return self.metadata.get('example')
@@ -28,6 +30,12 @@ class ExampleTextExtractor(TextExtractor):
         return self.text
 
 
+class ExampleURLInfoExtractor(URLInfoExtractor):
+
+    def extract_value(self):
+        return self.url_info['loc']
+
+
 class TestExtractionEngine(TestCase):
 
     def setUp(self):
@@ -37,11 +45,11 @@ class TestExtractionEngine(TestCase):
 
     def test_applies_metadata_extractors_to_converter_metadata(self):
         converter = MockConverter({'example': 'value', 'other': 'data'})
-        field = Field('EXAMPLE', extractors=[ExampleExtractor()])
+        field = Field('EXAMPLE', extractors=[ExampleMetadataExtractor()])
 
         engine = ExtractionEngine(
-            self.config, fileobj=None, content_type=None, filename=None,
-            fields=[field], converter=converter)
+            self.config, url_info=None, fileobj=None, content_type=None,
+            filename=None, fields=[field], converter=converter)
 
         self.assertEquals({'EXAMPLE': 'value'}, engine.extract_field_values())
 
@@ -51,10 +59,23 @@ class TestExtractionEngine(TestCase):
             'EXAMPLE', extractors=[ExampleTextExtractor()])
 
         engine = ExtractionEngine(
-            self.config, fileobj=None, content_type=None, filename=None,
-            fields=[field], converter=converter)
+            self.config, url_info=None, fileobj=None, content_type=None,
+            filename=None, fields=[field], converter=converter)
 
         self.assertEquals({'EXAMPLE': 'foo bar'},
+                          engine.extract_field_values())
+
+    def test_applies_urlinfo_extractors_to_urlinfo(self):
+        converter = MagicMock()
+        field = Field(
+            'EXAMPLE', extractors=[ExampleURLInfoExtractor()])
+        url_info = {'loc': 'http://example.org'}
+
+        engine = ExtractionEngine(
+            self.config, url_info=url_info, fileobj=None, content_type=None,
+            filename=None, fields=[field], converter=converter)
+
+        self.assertEquals({'EXAMPLE': 'http://example.org'},
                           engine.extract_field_values())
 
     def test_gets_metadata_from_converter(self):
@@ -62,8 +83,8 @@ class TestExtractionEngine(TestCase):
         converter.extract_metadata = MagicMock(return_value={'foo': 'bar'})
 
         engine = ExtractionEngine(
-            self.config, fileobj=None, content_type=None, filename=None,
-            fields=[], converter=converter)
+            self.config, url_info=None, fileobj=None, content_type=None,
+            filename=None, fields=[], converter=converter)
 
         self.assertEquals({'foo': 'bar'}, engine.metadata)
 
@@ -72,8 +93,8 @@ class TestExtractionEngine(TestCase):
         converter.extract_text = MagicMock(return_value='foo bar')
 
         engine = ExtractionEngine(
-            self.config, fileobj=None, content_type=None, filename=None,
-            fields=[], converter=converter)
+            self.config, url_info=None, fileobj=None, content_type=None,
+            filename=None, fields=[], converter=converter)
 
         self.assertEquals('foo bar', engine.text)
 
@@ -81,8 +102,8 @@ class TestExtractionEngine(TestCase):
         extractor = object()
         field = Field('foo', extractors=[extractor])
         engine = ExtractionEngine(
-            self.config, fileobj=None, content_type=None, filename=None,
-            fields=[field], converter=MagicMock())
+            self.config, url_info=None, fileobj=None, content_type=None,
+            filename=None, fields=[field], converter=MagicMock())
 
         with self.assertRaises(TypeError):
             engine.extract_field_values()
@@ -112,12 +133,12 @@ class TestTextExtractor(TestCase):
             extractor.extract_value()
 
 
-class TestTitleExtractor(TestCase):
+class TestURLInfoExtractor(TestCase):
 
-    def test_extracts_title(self):
-        extractor = TitleExtractor()
-        extractor.metadata = {'foo': None, 'title': 'value', 'bar': None}
-        self.assertEquals('value', extractor.extract_value())
+    def test_extract_value_raises_not_implemented(self):
+        extractor = URLInfoExtractor()
+        with self.assertRaises(NotImplementedError):
+            extractor.extract_value()
 
 
 class TestPlainTextExtractor(TestCase):
@@ -126,3 +147,19 @@ class TestPlainTextExtractor(TestCase):
         extractor = PlainTextExtractor()
         extractor.text = 'foobar'
         self.assertEquals('foobar', extractor.extract_value())
+
+
+class TestTitleExtractor(TestCase):
+
+    def test_extracts_title(self):
+        extractor = TitleExtractor()
+        extractor.metadata = {'foo': None, 'title': 'value', 'bar': None}
+        self.assertEquals('value', extractor.extract_value())
+
+
+class TestURLExtractor(TestCase):
+
+    def test_extracts_url_from_urlinfo(self):
+        extractor = URLExtractor()
+        extractor.url_info = {'loc': 'http://example.org'}
+        self.assertEquals('http://example.org', extractor.extract_value())

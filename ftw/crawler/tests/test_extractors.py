@@ -2,6 +2,7 @@ from argparse import Namespace
 from ftw.crawler.configuration import Field
 from ftw.crawler.configuration import get_config
 from ftw.crawler.extractors import ExtractionEngine
+from ftw.crawler.extractors import Extractor
 from ftw.crawler.extractors import MetadataExtractor
 from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import TextExtractor
@@ -17,14 +18,14 @@ BASIC_CONFIG = resource_filename('ftw.crawler.tests.assets', 'basic_config.py')
 
 class ExampleExtractor(MetadataExtractor):
 
-    def extract_metadata(self, metadata):
-        return metadata.get('example')
+    def extract_value(self):
+        return self.metadata.get('example')
 
 
 class ExampleTextExtractor(TextExtractor):
 
-    def extract_text(self, text):
-        return text
+    def extract_value(self):
+        return self.text
 
 
 class TestExtractionEngine(TestCase):
@@ -34,7 +35,7 @@ class TestExtractionEngine(TestCase):
         args.config = BASIC_CONFIG
         self.config = get_config(args)
 
-    def test_applies_extractors_to_converter_metadata(self):
+    def test_applies_metadata_extractors_to_converter_metadata(self):
         converter = MockConverter({'example': 'value', 'other': 'data'})
         field = Field('EXAMPLE', extractors=[ExampleExtractor()])
 
@@ -44,7 +45,7 @@ class TestExtractionEngine(TestCase):
 
         self.assertEquals({'EXAMPLE': 'value'}, engine.extract_field_values())
 
-    def test_applies_extractors_to_converter_plain_text(self):
+    def test_applies_text_extractors_to_converter_plain_text(self):
         converter = MockConverter(text='foo bar')
         field = Field(
             'EXAMPLE', extractors=[ExampleTextExtractor()])
@@ -87,33 +88,41 @@ class TestExtractionEngine(TestCase):
             engine.extract_field_values()
 
 
+class TestExtractorBaseClass(TestCase):
+
+    def test_extract_value_raises_not_implemented(self):
+        extractor = Extractor()
+        with self.assertRaises(NotImplementedError):
+            extractor.extract_value()
+
+
 class TestMetadataExtractor(TestCase):
 
-    def test_extract_metadata_raises_not_implemented(self):
+    def test_extract_value_raises_not_implemented(self):
         extractor = MetadataExtractor()
         with self.assertRaises(NotImplementedError):
-            extractor.extract_metadata(metadata=None)
+            extractor.extract_value()
 
 
 class TestTextExtractor(TestCase):
 
-    def test_extract_text_raises_not_implemented(self):
+    def test_extract_value_raises_not_implemented(self):
         extractor = TextExtractor()
         with self.assertRaises(NotImplementedError):
-            extractor.extract_text(text='')
+            extractor.extract_value()
 
 
 class TestTitleExtractor(TestCase):
 
     def test_extracts_title(self):
-        metadata = {'foo': None, 'title': 'value', 'bar': None}
         extractor = TitleExtractor()
-        self.assertEquals('value', extractor.extract_metadata(metadata))
+        extractor.metadata = {'foo': None, 'title': 'value', 'bar': None}
+        self.assertEquals('value', extractor.extract_value())
 
 
 class TestPlainTextExtractor(TestCase):
 
     def test_returns_given_text(self):
-        text = 'foobar'
         extractor = PlainTextExtractor()
-        self.assertEquals('foobar', extractor.extract_text(text))
+        extractor.text = 'foobar'
+        self.assertEquals('foobar', extractor.extract_value())

@@ -1,25 +1,23 @@
 class Extractor(object):
     """Base class for all extractors.
     """
+    def extract_value(self):
+        raise NotImplementedError
 
 
 class MetadataExtractor(Extractor):
     """Base class for all extractors that extract structured metadata via Tika.
     """
 
-    def extract_metadata(self, metadata):
-        raise NotImplementedError
-
 
 class TextExtractor(Extractor):
     """Base class for all extractors that extract plain text via Tika.
     """
 
-    def extract_text(self, text):
-        raise NotImplementedError
-
 
 class ExtractionEngine(object):
+
+    extractor_types = (MetadataExtractor, TextExtractor)
 
     def __init__(self, config, fileobj, content_type, filename,
                  fields, converter):
@@ -47,11 +45,14 @@ class ExtractionEngine(object):
         for field in self.fields:
             for extractor in field.extractors:
                 if isinstance(extractor, MetadataExtractor):
-                    value = extractor.extract_metadata(self.metadata)
-                elif isinstance(extractor, TextExtractor):
-                    value = extractor.extract_text(self.text)
-                else:
+                    extractor.metadata = self.metadata
+                if isinstance(extractor, TextExtractor):
+                    extractor.text = self.text
+
+                if not isinstance(extractor, ExtractionEngine.extractor_types):
                     self._unkown_extractor_type(extractor)
+
+                value = extractor.extract_value()
                 assert isinstance(value, field.type_)
                 field_values.update({field.name: value})
         return field_values
@@ -59,11 +60,11 @@ class ExtractionEngine(object):
 
 class PlainTextExtractor(TextExtractor):
 
-    def extract_text(self, text):
-        return text
+    def extract_value(self):
+        return self.text
 
 
 class TitleExtractor(MetadataExtractor):
 
-    def extract_metadata(self, metadata):
-        return metadata.get('title')
+    def extract_value(self):
+        return self.metadata.get('title')

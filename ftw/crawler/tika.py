@@ -30,3 +30,12 @@ class TikaConverter(object):
         csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
         metadata = dict(iter(csv_reader))
         return SimpleMetadata(metadata)
+
+    def extract_text(self, fileobj, content_type, filename=''):
+        log.info("Extracting plain text from '{}' with "
+                 "tika JAXRS server.".format(filename))
+
+        headers = {'Content-type': content_type,
+                   'Accept': 'text/plain'}
+        response = self._tika_request('tika', fileobj, headers)
+        return response.content

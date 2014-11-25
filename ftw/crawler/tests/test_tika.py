@@ -31,3 +31,19 @@ class TestTikaConverter(TestCase):
             'http://localhost:9998/meta',
             headers={'Content-type': 'application/pdf'},
             data=fileobj)
+
+    @patch('requests.put')
+    def test_extracts_text(self, request):
+        fileobj = io.BytesIO('')
+        request.return_value = MockResponse(content='foo bar')
+
+        tika = TikaConverter('http://localhost:9998')
+        extracted_text = tika.extract_text(
+            fileobj, 'application/pdf', 'foo.pdf')
+
+        self.assertEquals('foo bar', extracted_text)
+        request.assert_called_with(
+            'http://localhost:9998/tika',
+            headers={'Content-type': 'application/pdf',
+                     'Accept': 'text/plain'},
+            data=fileobj)

@@ -49,8 +49,15 @@ class MockResponse(object):
 
 class MockConverter(object):
 
-    def __init__(self, returned_metadata):
-        self.returned_metadata = returned_metadata
+    def __init__(self, metadata=None, text=''):
+        if metadata is None:
+            metadata = {}
+        self.metadata = metadata
+
+        self.text = text
 
     def extract_metadata(self, fileobj, content_type, filename):
-        return self.returned_metadata
+        return self.metadata
+
+    def extract_text(self, fileobj, content_type, filename):
+        return self.text

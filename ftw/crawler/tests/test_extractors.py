@@ -3,6 +3,8 @@ from ftw.crawler.configuration import Field
 from ftw.crawler.configuration import get_config
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.extractors import MetadataExtractor
+from ftw.crawler.extractors import PlainTextExtractor
+from ftw.crawler.extractors import TextExtractor
 from ftw.crawler.extractors import TitleExtractor
 from ftw.crawler.tests.helpers import MockConverter
 from mock import MagicMock
@@ -19,12 +21,10 @@ class ExampleExtractor(MetadataExtractor):
         return metadata.get('example')
 
 
-class TestMetadataExtractor(TestCase):
+class ExampleTextExtractor(TextExtractor):
 
-    def test_extract_metadata_raises_not_implemented(self):
-        extractor = MetadataExtractor()
-        with self.assertRaises(NotImplementedError):
-            extractor.extract_metadata(metadata=None)
+    def extract_text(self, text):
+        return text
 
 
 class TestExtractionEngine(TestCase):
@@ -35,25 +35,72 @@ class TestExtractionEngine(TestCase):
         self.config = get_config(args)
 
     def test_applies_extractors_to_converter_metadata(self):
-        mock_converter = MockConverter({'example': 'value', 'other': 'data'})
+        converter = MockConverter({'example': 'value', 'other': 'data'})
         field = Field('EXAMPLE', extractors=[ExampleExtractor()], type_=str)
 
         engine = ExtractionEngine(
             self.config, fileobj=None, content_type=None, filename=None,
-            fields=[field], converter=mock_converter)
+            fields=[field], converter=converter)
 
         self.assertEquals({'EXAMPLE': 'value'}, engine.extract_field_values())
 
-    def test_gets_metadata_from_converter(self):
-        mock_converter = MagicMock()
-        mock_converter.extract_metadata = MagicMock(
-            return_value={'foo': 'bar'})
+    def test_applies_extractors_to_converter_plain_text(self):
+        converter = MockConverter(text='foo bar')
+        field = Field(
+            'EXAMPLE', extractors=[ExampleTextExtractor()], type_=str)
 
         engine = ExtractionEngine(
             self.config, fileobj=None, content_type=None, filename=None,
-            fields=[], converter=mock_converter)
+            fields=[field], converter=converter)
+
+        self.assertEquals({'EXAMPLE': 'foo bar'},
+                          engine.extract_field_values())
+
+    def test_gets_metadata_from_converter(self):
+        converter = MagicMock()
+        converter.extract_metadata = MagicMock(return_value={'foo': 'bar'})
+
+        engine = ExtractionEngine(
+            self.config, fileobj=None, content_type=None, filename=None,
+            fields=[], converter=converter)
 
         self.assertEquals({'foo': 'bar'}, engine.metadata)
+
+    def test_gets_text_from_converter(self):
+        converter = MagicMock()
+        converter.extract_text = MagicMock(return_value='foo bar')
+
+        engine = ExtractionEngine(
+            self.config, fileobj=None, content_type=None, filename=None,
+            fields=[], converter=converter)
+
+        self.assertEquals('foo bar', engine.text)
+
+    def test_raises_type_error_for_unknown_extractor_type(self):
+        extractor = object()
+        field = Field('foo', extractors=[extractor], type_=str)
+        engine = ExtractionEngine(
+            self.config, fileobj=None, content_type=None, filename=None,
+            fields=[field], converter=MagicMock())
+
+        with self.assertRaises(TypeError):
+            engine.extract_field_values()
+
+
+class TestMetadataExtractor(TestCase):
+
+    def test_extract_metadata_raises_not_implemented(self):
+        extractor = MetadataExtractor()
+        with self.assertRaises(NotImplementedError):
+            extractor.extract_metadata(metadata=None)
+
+
+class TestTextExtractor(TestCase):
+
+    def test_extract_text_raises_not_implemented(self):
+        extractor = TextExtractor()
+        with self.assertRaises(NotImplementedError):
+            extractor.extract_text(text='')
 
 
 class TestTitleExtractor(TestCase):
@@ -62,3 +109,11 @@ class TestTitleExtractor(TestCase):
         metadata = {'foo': None, 'title': 'value', 'bar': None}
         extractor = TitleExtractor()
         self.assertEquals('value', extractor.extract_metadata(metadata))
+
+
+class TestPlainTextExtractor(TestCase):
+
+    def test_returns_given_text(self):
+        text = 'foobar'
+        extractor = PlainTextExtractor()
+        self.assertEquals('foobar', extractor.extract_text(text))

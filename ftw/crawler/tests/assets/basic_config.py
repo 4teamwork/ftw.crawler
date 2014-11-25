@@ -14,10 +14,8 @@ CONFIG = Config(
     solr='http://localhost:8983/solr',
     fields=[
         Field('SearchableText',
-              extractors=[PlainTextExtractor()],
-              type_=str),
+              extractors=[PlainTextExtractor()]),
         Field('Title',
-              extractors=[TitleExtractor()],
-              type_=str),
+              extractors=[TitleExtractor()]),
     ]
 )

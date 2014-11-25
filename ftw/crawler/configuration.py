@@ -26,7 +26,7 @@ class Site(object):
 
 class Field(object):
 
-    def __init__(self, name, extractors, type_):
+    def __init__(self, name, extractors, type_=str):
         self.name = name
         self.extractors = extractors
         self.type_ = type_

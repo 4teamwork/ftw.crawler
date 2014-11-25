@@ -36,7 +36,7 @@ class TestExtractionEngine(TestCase):
 
     def test_applies_extractors_to_converter_metadata(self):
         converter = MockConverter({'example': 'value', 'other': 'data'})
-        field = Field('EXAMPLE', extractors=[ExampleExtractor()], type_=str)
+        field = Field('EXAMPLE', extractors=[ExampleExtractor()])
 
         engine = ExtractionEngine(
             self.config, fileobj=None, content_type=None, filename=None,
@@ -47,7 +47,7 @@ class TestExtractionEngine(TestCase):
     def test_applies_extractors_to_converter_plain_text(self):
         converter = MockConverter(text='foo bar')
         field = Field(
-            'EXAMPLE', extractors=[ExampleTextExtractor()], type_=str)
+            'EXAMPLE', extractors=[ExampleTextExtractor()])
 
         engine = ExtractionEngine(
             self.config, fileobj=None, content_type=None, filename=None,
@@ -78,7 +78,7 @@ class TestExtractionEngine(TestCase):
 
     def test_raises_type_error_for_unknown_extractor_type(self):
         extractor = object()
-        field = Field('foo', extractors=[extractor], type_=str)
+        field = Field('foo', extractors=[extractor])
         engine = ExtractionEngine(
             self.config, fileobj=None, content_type=None, filename=None,
             fields=[field], converter=MagicMock())

@@ -7,6 +7,7 @@ from ftw.crawler.extractors import MetadataExtractor
 from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import TextExtractor
 from ftw.crawler.extractors import TitleExtractor
+from ftw.crawler.extractors import UIDExtractor
 from ftw.crawler.extractors import URLExtractor
 from ftw.crawler.extractors import URLInfoExtractor
 from ftw.crawler.tests.helpers import MockConverter
@@ -155,6 +156,32 @@ class TestTitleExtractor(TestCase):
         extractor = TitleExtractor()
         extractor.metadata = {'foo': None, 'title': 'value', 'bar': None}
         self.assertEquals('value', extractor.extract_value())
+
+
+class TestUIDExtractor(TestCase):
+
+    def test_builds_uid_based_on_url(self):
+        extractor = UIDExtractor()
+        extractor.url_info = {'loc': 'http://example.org'}
+        self.assertEquals(
+            'dab521de-65f9-250b-4cca-7383feef67dc', extractor.extract_value())
+
+    def test_uid_stays_constant_for_same_url(self):
+        extractor = UIDExtractor()
+        extractor.url_info = {'loc': 'http://example.org'}
+        uids = [extractor.extract_value() for i in range(10)]
+        self.assertEquals(1, len(set(uids)))
+
+    def test_uid_is_different_for_different_urls(self):
+        extractor = UIDExtractor()
+
+        extractor.url_info = {'loc': 'http://example.org'}
+        uid1 = extractor.extract_value()
+
+        extractor.url_info = {'loc': 'http://example.org/foo'}
+        uid2 = extractor.extract_value()
+
+        self.assertNotEqual(uid1, uid2)
 
 
 class TestURLExtractor(TestCase):

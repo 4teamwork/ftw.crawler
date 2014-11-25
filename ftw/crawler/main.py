@@ -57,9 +57,7 @@ def crawl_and_index(tempdir, config):
             os.unlink(resource_fn)
 
             log.info("Indexing {} into solr.".format(url_info['loc']))
-            document = field_values.copy()
-            document['UID'] = url_info['loc']
-            solr.index(document)
+            solr.index(field_values)
 
             print
         print

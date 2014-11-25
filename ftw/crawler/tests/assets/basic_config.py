@@ -3,6 +3,7 @@ from ftw.crawler.configuration import Field
 from ftw.crawler.configuration import Site
 from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import TitleExtractor
+from ftw.crawler.extractors import UIDExtractor
 from ftw.crawler.extractors import URLExtractor
 
 
@@ -20,5 +21,7 @@ CONFIG = Config(
               extractors=[PlainTextExtractor()]),
         Field('Title',
               extractors=[TitleExtractor()]),
+        Field('UID',
+              extractors=[UIDExtractor()]),
     ]
 )

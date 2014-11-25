@@ -1,3 +1,7 @@
+from uuid import UUID
+import hashlib
+
+
 class Extractor(object):
     """Base class for all extractors.
     """
@@ -71,6 +75,15 @@ class PlainTextExtractor(TextExtractor):
 
     def extract_value(self):
         return self.text
+
+
+class UIDExtractor(URLInfoExtractor):
+
+    def extract_value(self):
+        url = self.url_info['loc']
+        hash_ = hashlib.md5(url)
+        uid = UUID(bytes=hash_.digest())
+        return str(uid)
 
 
 class URLExtractor(URLInfoExtractor):

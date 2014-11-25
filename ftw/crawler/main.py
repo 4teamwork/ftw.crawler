@@ -19,6 +19,16 @@ def mktmp(tempdir):
     return tempfile.NamedTemporaryFile(dir=tempdir, delete=False)
 
 
+def print_fields(field_values):
+    print
+    print "=== FIELD VALUES ===="
+    for key, value in field_values.items():
+        if key == 'SearchableText':
+            value = repr(value.strip()[:60]) + '...'
+        print "{:<17} {}".format(key + ':', value)
+    print
+
+
 def crawl_and_index(tempdir, config):
     solr = SolrConnector(config.solr)
 
@@ -43,7 +53,7 @@ def crawl_and_index(tempdir, config):
                     filename='', fields=config.fields,
                     converter=TikaConverter(config.tika))
                 field_values = engine.extract_field_values()
-                print field_values
+                print_fields(field_values)
             os.unlink(resource_fn)
 
             log.info("Indexing {} into solr.".format(url_info['loc']))

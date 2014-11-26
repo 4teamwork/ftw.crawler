@@ -1,4 +1,4 @@
-import json
+from ftw.crawler.utils import ExtendedJSONEncoder
 import logging
 import requests
 
@@ -17,7 +17,7 @@ class SolrConnector(object):
 
     def _update_request(self, data):
         headers = {'Content-Type': 'application/json'}
-        document = json.dumps(data)
+        document = ExtendedJSONEncoder().encode(data)
         response = requests.post(
             self.update_url, data=document, headers=headers)
 

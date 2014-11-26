@@ -1,6 +1,7 @@
 from argparse import Namespace
 from ftw.crawler.configuration import Field
 from ftw.crawler.configuration import get_config
+from ftw.crawler.extractors import ConstantExtractor
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.extractors import Extractor
 from ftw.crawler.extractors import MetadataExtractor
@@ -118,30 +119,6 @@ class TestExtractorBaseClass(TestCase):
             extractor.extract_value()
 
 
-class TestMetadataExtractor(TestCase):
-
-    def test_extract_value_raises_not_implemented(self):
-        extractor = MetadataExtractor()
-        with self.assertRaises(NotImplementedError):
-            extractor.extract_value()
-
-
-class TestTextExtractor(TestCase):
-
-    def test_extract_value_raises_not_implemented(self):
-        extractor = TextExtractor()
-        with self.assertRaises(NotImplementedError):
-            extractor.extract_value()
-
-
-class TestURLInfoExtractor(TestCase):
-
-    def test_extract_value_raises_not_implemented(self):
-        extractor = URLInfoExtractor()
-        with self.assertRaises(NotImplementedError):
-            extractor.extract_value()
-
-
 class TestPlainTextExtractor(TestCase):
 
     def test_returns_given_text(self):
@@ -190,3 +167,10 @@ class TestURLExtractor(TestCase):
         extractor = URLExtractor()
         extractor.url_info = {'loc': 'http://example.org'}
         self.assertEquals('http://example.org', extractor.extract_value())
+
+
+class TestConstantExtractor(TestCase):
+
+    def test_returns_constant_value(self):
+        extractor = ConstantExtractor(42)
+        self.assertEquals(42, extractor.extract_value())

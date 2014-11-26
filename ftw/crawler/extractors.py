@@ -25,9 +25,18 @@ class URLInfoExtractor(Extractor):
     """
 
 
+class ResourceIndependentExtractor(Extractor):
+    """Base class for all extractors that don't need any information from
+    the resource whatsoever.
+    """
+
+
 class ExtractionEngine(object):
 
-    extractor_types = (MetadataExtractor, TextExtractor, URLInfoExtractor)
+    extractor_types = (
+        MetadataExtractor, TextExtractor, URLInfoExtractor,
+        ResourceIndependentExtractor
+    )
 
     def __init__(self, config, url_info, fileobj, content_type, filename,
                  fields, converter):
@@ -96,3 +105,12 @@ class TitleExtractor(MetadataExtractor):
 
     def extract_value(self):
         return self.metadata.get('title')
+
+
+class ConstantExtractor(ResourceIndependentExtractor):
+
+    def __init__(self, value):
+        self.value = value
+
+    def extract_value(self):
+        return self.value

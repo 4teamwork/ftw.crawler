@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 import hashlib
 
@@ -114,3 +115,9 @@ class ConstantExtractor(ResourceIndependentExtractor):
 
     def extract_value(self):
         return self.value
+
+
+class IndexingTimeExtractor(ResourceIndependentExtractor):
+
+    def extract_value(self):
+        return datetime.utcnow()

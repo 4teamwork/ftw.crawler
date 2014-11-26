@@ -1,9 +1,11 @@
 from argparse import Namespace
+from datetime import datetime
 from ftw.crawler.configuration import Field
 from ftw.crawler.configuration import get_config
 from ftw.crawler.extractors import ConstantExtractor
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.extractors import Extractor
+from ftw.crawler.extractors import IndexingTimeExtractor
 from ftw.crawler.extractors import MetadataExtractor
 from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import TextExtractor
@@ -11,6 +13,7 @@ from ftw.crawler.extractors import TitleExtractor
 from ftw.crawler.extractors import UIDExtractor
 from ftw.crawler.extractors import URLExtractor
 from ftw.crawler.extractors import URLInfoExtractor
+from ftw.crawler.testing import DatetimeTestCase
 from ftw.crawler.tests.helpers import MockConverter
 from mock import MagicMock
 from pkg_resources import resource_filename
@@ -174,3 +177,11 @@ class TestConstantExtractor(TestCase):
     def test_returns_constant_value(self):
         extractor = ConstantExtractor(42)
         self.assertEquals(42, extractor.extract_value())
+
+
+class TestIndexingTimeExtractor(DatetimeTestCase):
+
+    def test_returns_current_time(self):
+        extractor = IndexingTimeExtractor()
+        self.assertDatetimesAlmostEqual(datetime.utcnow(),
+                                        extractor.extract_value())

@@ -1,5 +1,10 @@
 from lxml import etree
 from unittest2 import TestCase
+import calendar
+
+
+def timestamp(dt):
+    return calendar.timegm(dt.utctimetuple())
 
 
 class XMLTestCase(TestCase):
@@ -20,3 +25,14 @@ class XMLTestCase(TestCase):
         actual_xml = self.tostring(self.tree_from_str(actual))
         expected_xml = self.tostring(self.tree_from_str(expected))
         return self.assertEquals(expected_xml, actual_xml)
+
+
+class DatetimeTestCase(TestCase):
+
+    def assertDatetimesAlmostEqual(self, expected, actual, delta=2):
+        expected_ts = timestamp(expected)
+        actual_ts = timestamp(actual)
+        msg = "datetimes {} and {} aren't within {} seconds.".format(
+            expected, actual, delta)
+        return self.assertAlmostEqual(expected_ts, actual_ts,
+                                      delta=delta, msg=msg)

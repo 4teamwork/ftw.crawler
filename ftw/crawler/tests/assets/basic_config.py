@@ -19,6 +19,9 @@ CONFIG = Config(
     tika='http://localhost:9998/',
     solr='http://localhost:8983/solr',
     fields=[
+        Field('allowedRolesAndUsers',
+              extractors=[ConstantExtractor(['Anonymous'])],
+              multivalued=True),
         Field('effective',
               extractors=[IndexingTimeExtractor()],
               type_=datetime),

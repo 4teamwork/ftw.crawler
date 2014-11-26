@@ -1,5 +1,9 @@
 import json
+import logging
 import requests
+
+
+log = logging.getLogger(__name__)
 
 
 class SolrConnector(object):
@@ -16,6 +20,10 @@ class SolrConnector(object):
         document = json.dumps(data)
         response = requests.post(
             self.update_url, data=document, headers=headers)
+
+        if not response.status_code == 200:
+            log.error("Error from Solr: Status: {}. Response:\n{}".format(
+                response.status_code, response.content))
         return response
 
     def index(self, document):

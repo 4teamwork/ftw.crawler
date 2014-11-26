@@ -12,6 +12,12 @@ class TestSolrConnector(TestCase):
             content='{"responseHeader":{"status":0,"QTime":10}}',
             headers={'content-type': 'application/json; charset=UTF-8'})
 
+        self.response_400_bad_request = MockResponse(
+            status_code=400,
+            content='{"responseHeader":{"status":400,"QTime":0},'
+                    '"error":''{"msg":"Something went wrong","code":400}}',
+            headers={'content-type': 'application/json; charset=UTF-8'})
+
     @patch('requests.post')
     def test_index_returns_response(self, request):
         request.return_value = self.response_ok
@@ -54,3 +60,12 @@ class TestSolrConnector(TestCase):
         solr.delete(uid)
         request.assert_called_with(
             expected_url, headers=expected_headers, data=json.dumps(cmd))
+
+    @patch('ftw.crawler.solr.log')
+    @patch('requests.post')
+    def test_logs_non_200_responses_from_solr(self, request, log):
+        request.return_value = self.response_400_bad_request
+
+        solr = SolrConnector('http://localhost:8983/solr')
+        solr.index({'field': 'value'})
+        self.assertTrue(log.error.called)

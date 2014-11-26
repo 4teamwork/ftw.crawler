@@ -26,7 +26,8 @@ class Site(object):
 
 class Field(object):
 
-    def __init__(self, name, extractors, type_=str):
+    def __init__(self, name, extractors, type_=str, multivalued=False):
         self.name = name
         self.extractors = extractors
         self.type_ = type_
+        self.multivalued = multivalued

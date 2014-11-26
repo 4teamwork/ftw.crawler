@@ -61,6 +61,13 @@ class ExtractionEngine(object):
             "of {}. (Current base classes: {})".format(
                 ExtractionEngine.extractor_types, cls, cls.__bases__))
 
+    def _assert_proper_type(self, field, value):
+        # TODO: Raise a custom exception with a helpful message
+        if field.multivalued:
+            assert(all(isinstance(v, field.type_) for v in value))
+        else:
+            assert isinstance(value, field.type_)
+
     def extract_field_values(self):
         field_values = {}
         for field in self.fields:
@@ -76,7 +83,7 @@ class ExtractionEngine(object):
                     self._unkown_extractor_type(extractor)
 
                 value = extractor.extract_value()
-                assert isinstance(value, field.type_)
+                self._assert_proper_type(field, value)
                 field_values.update({field.name: value})
         return field_values
 

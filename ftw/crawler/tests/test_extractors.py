@@ -113,6 +113,28 @@ class TestExtractionEngine(TestCase):
         with self.assertRaises(TypeError):
             engine.extract_field_values()
 
+    def test_asserts_proper_type_for_extractors(self):
+        field = Field('int_field',
+                      extractors=[ConstantExtractor('foo')],
+                      type_=int)
+        engine = ExtractionEngine(
+            self.config, url_info=None, fileobj=None, content_type=None,
+            filename=None, fields=[field], converter=MagicMock())
+
+        with self.assertRaises(AssertionError):
+            engine.extract_field_values()
+
+    def test_asserts_proper_type_for_multivalued_extractors(self):
+        field = Field('int_field',
+                      extractors=[ConstantExtractor([42])],
+                      type_=int,
+                      multivalued=True)
+        engine = ExtractionEngine(
+            self.config, url_info=None, fileobj=None, content_type=None,
+            filename=None, fields=[field], converter=MagicMock())
+
+        self.assertEquals({'int_field': [42]}, engine.extract_field_values())
+
 
 class TestExtractorBaseClass(TestCase):
 

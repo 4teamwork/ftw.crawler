@@ -48,13 +48,28 @@ class TestExtractionEngine(TestCase):
         args.config = BASIC_CONFIG
         self.config = get_config(args)
 
+    def _create_engine(self, config=None, url_info=None, fileobj=None,
+                       content_type=None, filename=None, fields=None,
+                       converter=None):
+        if config is None:
+            config = self.config
+
+        if fields is None:
+            fields = []
+
+        if converter is None:
+            converter = MagicMock()
+
+        engine = ExtractionEngine(
+            config, url_info=url_info, fileobj=fileobj,
+            content_type=content_type, filename=filename, fields=fields,
+            converter=converter)
+        return engine
+
     def test_applies_metadata_extractors_to_converter_metadata(self):
         converter = MockConverter({'example': 'value', 'other': 'data'})
         field = Field('EXAMPLE', extractors=[ExampleMetadataExtractor()])
-
-        engine = ExtractionEngine(
-            self.config, url_info=None, fileobj=None, content_type=None,
-            filename=None, fields=[field], converter=converter)
+        engine = self._create_engine(fields=[field], converter=converter)
 
         self.assertEquals({'EXAMPLE': 'value'}, engine.extract_field_values())
 
@@ -62,23 +77,16 @@ class TestExtractionEngine(TestCase):
         converter = MockConverter(text='foo bar')
         field = Field(
             'EXAMPLE', extractors=[ExampleTextExtractor()])
-
-        engine = ExtractionEngine(
-            self.config, url_info=None, fileobj=None, content_type=None,
-            filename=None, fields=[field], converter=converter)
+        engine = self._create_engine(fields=[field], converter=converter)
 
         self.assertEquals({'EXAMPLE': 'foo bar'},
                           engine.extract_field_values())
 
     def test_applies_urlinfo_extractors_to_urlinfo(self):
-        converter = MagicMock()
         field = Field(
             'EXAMPLE', extractors=[ExampleURLInfoExtractor()])
         url_info = {'loc': 'http://example.org'}
-
-        engine = ExtractionEngine(
-            self.config, url_info=url_info, fileobj=None, content_type=None,
-            filename=None, fields=[field], converter=converter)
+        engine = self._create_engine(url_info=url_info, fields=[field])
 
         self.assertEquals({'EXAMPLE': 'http://example.org'},
                           engine.extract_field_values())
@@ -86,29 +94,20 @@ class TestExtractionEngine(TestCase):
     def test_gets_metadata_from_converter(self):
         converter = MagicMock()
         converter.extract_metadata = MagicMock(return_value={'foo': 'bar'})
-
-        engine = ExtractionEngine(
-            self.config, url_info=None, fileobj=None, content_type=None,
-            filename=None, fields=[], converter=converter)
+        engine = self._create_engine(converter=converter)
 
         self.assertEquals({'foo': 'bar'}, engine.metadata)
 
     def test_gets_text_from_converter(self):
         converter = MagicMock()
         converter.extract_text = MagicMock(return_value='foo bar')
-
-        engine = ExtractionEngine(
-            self.config, url_info=None, fileobj=None, content_type=None,
-            filename=None, fields=[], converter=converter)
+        engine = self._create_engine(converter=converter)
 
         self.assertEquals('foo bar', engine.text)
 
     def test_raises_type_error_for_unknown_extractor_type(self):
-        extractor = object()
-        field = Field('foo', extractors=[extractor])
-        engine = ExtractionEngine(
-            self.config, url_info=None, fileobj=None, content_type=None,
-            filename=None, fields=[field], converter=MagicMock())
+        field = Field('foo', extractors=[object()])
+        engine = self._create_engine(fields=[field])
 
         with self.assertRaises(TypeError):
             engine.extract_field_values()
@@ -117,9 +116,7 @@ class TestExtractionEngine(TestCase):
         field = Field('int_field',
                       extractors=[ConstantExtractor('foo')],
                       type_=int)
-        engine = ExtractionEngine(
-            self.config, url_info=None, fileobj=None, content_type=None,
-            filename=None, fields=[field], converter=MagicMock())
+        engine = self._create_engine(fields=[field])
 
         with self.assertRaises(AssertionError):
             engine.extract_field_values()
@@ -129,9 +126,7 @@ class TestExtractionEngine(TestCase):
                       extractors=[ConstantExtractor([42])],
                       type_=int,
                       multivalued=True)
-        engine = ExtractionEngine(
-            self.config, url_info=None, fileobj=None, content_type=None,
-            filename=None, fields=[field], converter=MagicMock())
+        engine = self._create_engine(fields=[field])
 
         self.assertEquals({'int_field': [42]}, engine.extract_field_values())
 

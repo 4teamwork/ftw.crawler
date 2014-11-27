@@ -81,20 +81,20 @@ class ExtractionEngine(object):
     def extract_field_values(self):
         field_values = {}
         for field in self.fields:
-            for extractor in field.extractors:
-                if isinstance(extractor, MetadataExtractor):
-                    extractor.metadata = self.metadata
-                if isinstance(extractor, TextExtractor):
-                    extractor.text = self.text
-                if isinstance(extractor, URLInfoExtractor):
-                    extractor.url_info = self.url_info
+            extractor = field.extractor
+            if isinstance(extractor, MetadataExtractor):
+                extractor.metadata = self.metadata
+            if isinstance(extractor, TextExtractor):
+                extractor.text = self.text
+            if isinstance(extractor, URLInfoExtractor):
+                extractor.url_info = self.url_info
 
-                if not isinstance(extractor, ExtractionEngine.extractor_types):
-                    self._unkown_extractor_type(extractor)
+            if not isinstance(extractor, ExtractionEngine.extractor_types):
+                self._unkown_extractor_type(extractor)
 
-                value = extractor.extract_value()
-                self._assert_proper_type(field, value, extractor)
-                field_values.update({field.name: value})
+            value = extractor.extract_value()
+            self._assert_proper_type(field, value, extractor)
+            field_values.update({field.name: value})
         return field_values
 
 

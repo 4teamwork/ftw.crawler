@@ -17,7 +17,7 @@ class TestConfig(TestCase):
         self.site = Site('http://example.org')
         self.tika = 'http://localhost:9998'
         self.solr = 'http://localhost:8983/solr'
-        self.field = Field('foo', extractors=[])
+        self.field = Field('foo', extractor=None)
 
         self.config = Config([self.site], self.tika, self.solr, [self.field])
 
@@ -57,9 +57,9 @@ class TestField(TestCase):
         field = Field(self.name, [self.extractor])
         self.assertEquals(self.name, field.name)
 
-    def test_field_stores_extractors(self):
+    def test_field_stores_extractor(self):
         field = Field(self.name, [self.extractor])
-        self.assertEquals([self.extractor], field.extractors)
+        self.assertEquals([self.extractor], field.extractor)
 
     def test_field_stores_type(self):
         field = Field(self.name, [self.extractor], self.type_)

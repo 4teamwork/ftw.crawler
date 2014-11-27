@@ -70,7 +70,7 @@ class TestExtractionEngine(TestCase):
 
     def test_applies_metadata_extractors_to_converter_metadata(self):
         converter = MockConverter({'example': 'value', 'other': 'data'})
-        field = Field('EXAMPLE', extractors=[ExampleMetadataExtractor()])
+        field = Field('EXAMPLE', extractor=ExampleMetadataExtractor())
         engine = self._create_engine(fields=[field], converter=converter)
 
         self.assertEquals({'EXAMPLE': 'value'}, engine.extract_field_values())
@@ -78,7 +78,7 @@ class TestExtractionEngine(TestCase):
     def test_applies_text_extractors_to_converter_plain_text(self):
         converter = MockConverter(text='foo bar')
         field = Field(
-            'EXAMPLE', extractors=[ExampleTextExtractor()])
+            'EXAMPLE', extractor=ExampleTextExtractor())
         engine = self._create_engine(fields=[field], converter=converter)
 
         self.assertEquals({'EXAMPLE': 'foo bar'},
@@ -86,7 +86,7 @@ class TestExtractionEngine(TestCase):
 
     def test_applies_urlinfo_extractors_to_urlinfo(self):
         field = Field(
-            'EXAMPLE', extractors=[ExampleURLInfoExtractor()])
+            'EXAMPLE', extractor=ExampleURLInfoExtractor())
         url_info = {'loc': 'http://example.org'}
         engine = self._create_engine(url_info=url_info, fields=[field])
 
@@ -108,7 +108,7 @@ class TestExtractionEngine(TestCase):
         self.assertEquals('foo bar', engine.text)
 
     def test_raises_type_error_for_unknown_extractor_type(self):
-        field = Field('foo', extractors=[object()])
+        field = Field('foo', extractor=object())
         engine = self._create_engine(fields=[field])
 
         with self.assertRaises(ExtractionError):
@@ -116,7 +116,7 @@ class TestExtractionEngine(TestCase):
 
     def test_asserts_proper_type_for_extractors(self):
         field = Field('int_field',
-                      extractors=[ConstantExtractor('foo')],
+                      extractor=ConstantExtractor('foo'),
                       type_=int)
         engine = self._create_engine(fields=[field])
 
@@ -125,7 +125,7 @@ class TestExtractionEngine(TestCase):
 
     def test_asserts_proper_type_for_multivalued_extractors(self):
         field = Field('int_field',
-                      extractors=[ConstantExtractor([42])],
+                      extractor=ConstantExtractor([42]),
                       type_=int,
                       multivalued=True)
         engine = self._create_engine(fields=[field])

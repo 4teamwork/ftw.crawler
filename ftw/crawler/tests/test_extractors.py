@@ -9,6 +9,7 @@ from ftw.crawler.extractors import DescriptionExtractor
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.extractors import Extractor
 from ftw.crawler.extractors import IndexingTimeExtractor
+from ftw.crawler.extractors import KeywordsExtractor
 from ftw.crawler.extractors import MetadataExtractor
 from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import TextExtractor
@@ -214,6 +215,25 @@ class TestDescriptionExtractor(TestCase):
 
     def test_raises_if_no_value_found(self):
         extractor = DescriptionExtractor()
+        extractor.metadata = {}
+        with self.assertRaises(NoValueExtracted):
+            extractor.extract_value()
+
+
+class TestKeywordsExtractor(TestCase):
+
+    def test_extracts_comma_separated_keywords(self):
+        extractor = KeywordsExtractor()
+        extractor.metadata = {'keywords': 'Foo, Bar,     Baz'}
+        self.assertEquals(['Foo', 'Bar', 'Baz'], extractor.extract_value())
+
+    def test_extracts_whitespace_separated_keywords(self):
+        extractor = KeywordsExtractor()
+        extractor.metadata = {'keywords': 'Foo Bar     Baz'}
+        self.assertEquals(['Foo', 'Bar', 'Baz'], extractor.extract_value())
+
+    def test_raises_if_no_value_found(self):
+        extractor = KeywordsExtractor()
         extractor.metadata = {}
         with self.assertRaises(NoValueExtracted):
             extractor.extract_value()

@@ -5,6 +5,7 @@ from ftw.crawler.configuration import Site
 from ftw.crawler.extractors import ConstantExtractor
 from ftw.crawler.extractors import DescriptionExtractor
 from ftw.crawler.extractors import IndexingTimeExtractor
+from ftw.crawler.extractors import KeywordsExtractor
 from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import TitleExtractor
 from ftw.crawler.extractors import UIDExtractor
@@ -40,6 +41,9 @@ CONFIG = Config(
               type_=bool),
         Field('Title',
               extractor=TitleExtractor()),
+        Field('topics',
+              extractor=KeywordsExtractor(),
+              multivalued=True),
         Field('UID',
               extractor=UIDExtractor(),
               required=True),

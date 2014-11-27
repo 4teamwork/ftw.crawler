@@ -155,6 +155,19 @@ class DescriptionExtractor(MetadataExtractor):
         return value
 
 
+class KeywordsExtractor(MetadataExtractor):
+
+    def extract_value(self):
+        value = self.metadata.get('keywords')
+        if value is None:
+            raise NoValueExtracted
+        if ',' in value:
+            keywords = value.split(',')
+        else:
+            keywords = value.split()
+        return [kw.strip() for kw in keywords]
+
+
 class ConstantExtractor(ResourceIndependentExtractor):
 
     def __init__(self, value):

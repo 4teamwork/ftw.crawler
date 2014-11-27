@@ -3,6 +3,7 @@ METADATA_MAPPING = {
     'created': ['dcterms:created', 'meta:creation-date', 'Creation-Date'],
     'description': ['dcterms:description', 'dc:description', 'DC.description',
                     'description'],
+    'keywords': ['dc:subject', 'DC.subject', 'keywords', 'subject'],
 }
 
 

@@ -6,3 +6,8 @@ class FtwCrawlerException(Exception):
 class FetchingError(FtwCrawlerException):
     """An error happend while attempting to fetch a resource.
     """
+
+
+class ExtractionError(FtwCrawlerException):
+    """An error happend while attempting to apply an extractor.
+    """

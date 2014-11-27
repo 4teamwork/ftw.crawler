@@ -2,6 +2,7 @@ from argparse import Namespace
 from datetime import datetime
 from ftw.crawler.configuration import Field
 from ftw.crawler.configuration import get_config
+from ftw.crawler.exceptions import ExtractionError
 from ftw.crawler.extractors import ConstantExtractor
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.extractors import Extractor
@@ -109,7 +110,7 @@ class TestExtractionEngine(TestCase):
         field = Field('foo', extractors=[object()])
         engine = self._create_engine(fields=[field])
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ExtractionError):
             engine.extract_field_values()
 
     def test_asserts_proper_type_for_extractors(self):
@@ -118,7 +119,7 @@ class TestExtractionEngine(TestCase):
                       type_=int)
         engine = self._create_engine(fields=[field])
 
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ExtractionError):
             engine.extract_field_values()
 
     def test_asserts_proper_type_for_multivalued_extractors(self):

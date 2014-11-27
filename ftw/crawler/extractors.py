@@ -1,4 +1,5 @@
 from datetime import datetime
+from ftw.crawler.exceptions import ExtractionError
 from uuid import UUID
 import hashlib
 
@@ -8,6 +9,11 @@ class Extractor(object):
     """
     def extract_value(self):
         raise NotImplementedError
+
+    def __repr__(self):
+        cls = self.__class__
+        name = '.'.join((cls.__module__, cls.__name__))
+        return "<{}>".format(name)
 
 
 class MetadataExtractor(Extractor):
@@ -56,17 +62,21 @@ class ExtractionEngine(object):
 
     def _unkown_extractor_type(self, extractor):
         cls = extractor.__class__
-        raise TypeError(
+        raise ExtractionError(
             "Unknown extractor type for '{}' - must inherit from at least one "
             "of {}. (Current base classes: {})".format(
                 ExtractionEngine.extractor_types, cls, cls.__bases__))
 
-    def _assert_proper_type(self, field, value):
-        # TODO: Raise a custom exception with a helpful message
+    def _assert_proper_type(self, field, value, extractor):
         if field.multivalued:
-            assert(all(isinstance(v, field.type_) for v in value))
+            valid_type = all(isinstance(v, field.type_) for v in value)
         else:
-            assert isinstance(value, field.type_)
+            valid_type = isinstance(value, field.type_)
+        if not valid_type:
+            raise ExtractionError(
+                "Invalid return value type '{}' for extractor {} and field "
+                "{}. Return value was: {}".format(
+                    type(value).__name__, extractor, field, repr(value)))
 
     def extract_field_values(self):
         field_values = {}
@@ -83,7 +93,7 @@ class ExtractionEngine(object):
                     self._unkown_extractor_type(extractor)
 
                 value = extractor.extract_value()
-                self._assert_proper_type(field, value)
+                self._assert_proper_type(field, value, extractor)
                 field_values.update({field.name: value})
         return field_values
 

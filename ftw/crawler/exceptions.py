@@ -11,3 +11,8 @@ class FetchingError(FtwCrawlerException):
 class ExtractionError(FtwCrawlerException):
     """An error happend while attempting to apply an extractor.
     """
+
+
+class NoValueExtracted(ExtractionError):
+    """The extractor was unable to extract a value.
+    """

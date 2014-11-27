@@ -3,6 +3,7 @@ from datetime import datetime
 from ftw.crawler.configuration import Field
 from ftw.crawler.configuration import get_config
 from ftw.crawler.exceptions import ExtractionError
+from ftw.crawler.exceptions import NoValueExtracted
 from ftw.crawler.extractors import ConstantExtractor
 from ftw.crawler.extractors import DescriptionExtractor
 from ftw.crawler.extractors import ExtractionEngine
@@ -28,7 +29,10 @@ BASIC_CONFIG = resource_filename('ftw.crawler.tests.assets', 'basic_config.py')
 class ExampleMetadataExtractor(MetadataExtractor):
 
     def extract_value(self):
-        return self.metadata.get('example')
+        value = self.metadata.get('example')
+        if value is None:
+            raise NoValueExtracted
+        return value
 
 
 class ExampleTextExtractor(TextExtractor):
@@ -132,6 +136,44 @@ class TestExtractionEngine(TestCase):
 
         self.assertEquals({'int_field': [42]}, engine.extract_field_values())
 
+    def test_provides_default_for_required_fields(self):
+        converter = MagicMock()
+        converter.extract_metadata = MagicMock(return_value={})
+
+        field = Field('required_field',
+                      extractor=ExampleMetadataExtractor(),
+                      type_=str,
+                      required=True)
+        engine = self._create_engine(fields=[field], converter=converter)
+
+        self.assertEquals(
+            {'required_field': ''}, engine.extract_field_values())
+
+    def test_provides_default_for_required_datetime_fields(self):
+        converter = MagicMock()
+        converter.extract_metadata = MagicMock(return_value={})
+
+        field = Field('required_datetime',
+                      extractor=ExampleMetadataExtractor(),
+                      type_=datetime,
+                      required=True)
+        engine = self._create_engine(fields=[field], converter=converter)
+
+        self.assertEquals(
+            {'required_datetime': datetime(1970, 1, 1, 0, 0)},
+            engine.extract_field_values())
+
+    def test_skips_field_if_no_value_extracted_and_field_not_required(self):
+        converter = MagicMock()
+        converter.extract_metadata = MagicMock(return_value={})
+
+        field = Field('optional_field',
+                      extractor=ExampleMetadataExtractor(),
+                      type_=str)
+        engine = self._create_engine(fields=[field], converter=converter)
+
+        self.assertEquals({}, engine.extract_field_values())
+
 
 class TestExtractorBaseClass(TestCase):
 
@@ -156,6 +198,12 @@ class TestTitleExtractor(TestCase):
         extractor.metadata = {'foo': None, 'title': 'value', 'bar': None}
         self.assertEquals('value', extractor.extract_value())
 
+    def test_raises_if_no_value_found(self):
+        extractor = TitleExtractor()
+        extractor.metadata = {}
+        with self.assertRaises(NoValueExtracted):
+            extractor.extract_value()
+
 
 class TestDescriptionExtractor(TestCase):
 
@@ -163,6 +211,12 @@ class TestDescriptionExtractor(TestCase):
         extractor = DescriptionExtractor()
         extractor.metadata = {'foo': None, 'description': 'value', 'bar': None}
         self.assertEquals('value', extractor.extract_value())
+
+    def test_raises_if_no_value_found(self):
+        extractor = DescriptionExtractor()
+        extractor.metadata = {}
+        with self.assertRaises(NoValueExtracted):
+            extractor.extract_value()
 
 
 class TestUIDExtractor(TestCase):

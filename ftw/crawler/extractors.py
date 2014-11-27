@@ -1,5 +1,6 @@
 from datetime import datetime
 from ftw.crawler.exceptions import ExtractionError
+from ftw.crawler.exceptions import NoValueExtracted
 from uuid import UUID
 import hashlib
 
@@ -78,6 +79,15 @@ class ExtractionEngine(object):
                 "{}. Return value was: {}".format(
                     type(value).__name__, extractor, field, repr(value)))
 
+    def _get_field_default(self, field):
+        type_ = field.type_
+        if issubclass(type_, datetime):
+            epoch = datetime.utcfromtimestamp(0)
+            return epoch
+        else:
+            # Return zero value for the respective type by instantiating it
+            return type_()
+
     def extract_field_values(self):
         field_values = {}
         for field in self.fields:
@@ -92,7 +102,15 @@ class ExtractionEngine(object):
             if not isinstance(extractor, ExtractionEngine.extractor_types):
                 self._unkown_extractor_type(extractor)
 
-            value = extractor.extract_value()
+            try:
+                value = extractor.extract_value()
+            except NoValueExtracted:
+                if field.required:
+                    value = self._get_field_default(field)
+                else:
+                    # No value could be extracted, and field is not required,
+                    # so we may skip this field
+                    continue
             self._assert_proper_type(field, value, extractor)
             field_values.update({field.name: value})
         return field_values
@@ -122,13 +140,19 @@ class URLExtractor(URLInfoExtractor):
 class TitleExtractor(MetadataExtractor):
 
     def extract_value(self):
-        return self.metadata.get('title')
+        value = self.metadata.get('title')
+        if value is None:
+            raise NoValueExtracted
+        return value
 
 
 class DescriptionExtractor(MetadataExtractor):
 
     def extract_value(self):
-        return self.metadata.get('description')
+        value = self.metadata.get('description')
+        if value is None:
+            raise NoValueExtracted
+        return value
 
 
 class ConstantExtractor(ResourceIndependentExtractor):

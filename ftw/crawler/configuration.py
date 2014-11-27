@@ -26,13 +26,16 @@ class Site(object):
 
 class Field(object):
 
-    def __init__(self, name, extractor, type_=str, multivalued=False):
+    def __init__(self, name, extractor, type_=str, required=False,
+                 multivalued=False):
         self.name = name
         self.extractor = extractor
         self.type_ = type_
+        self.required = required
         self.multivalued = multivalued
 
     def __repr__(self):
-        desc = "<Field '{}' type_={} multivalued={} extractor={}>"
+        desc = "<Field '{}' type_={} required={} multivalued={} extractor={}>"
         return desc.format(
-            self.name, self.type_.__name__, self.multivalued, self.extractor)
+            self.name, self.type_.__name__, self.required, self.multivalued,
+            self.extractor)

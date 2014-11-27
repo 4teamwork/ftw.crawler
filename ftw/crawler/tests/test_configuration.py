@@ -65,6 +65,10 @@ class TestField(TestCase):
         field = Field(self.name, [self.extractor], self.type_)
         self.assertEquals(self.type_, field.type_)
 
+    def test_field_stores_required(self):
+        field = Field(self.name, [self.extractor], self.type_, required=True)
+        self.assertEquals(True, field.required)
+
 
 class TestGetConfig(TestCase):
 

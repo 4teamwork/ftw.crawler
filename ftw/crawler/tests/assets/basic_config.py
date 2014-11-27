@@ -41,6 +41,7 @@ CONFIG = Config(
         Field('Title',
               extractor=TitleExtractor()),
         Field('UID',
-              extractor=UIDExtractor()),
+              extractor=UIDExtractor(),
+              required=True),
     ]
 )

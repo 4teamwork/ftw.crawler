@@ -20,8 +20,12 @@ class Config(object):
 
 class Site(object):
 
-    def __init__(self, url):
+    def __init__(self, url, attributes=None):
         self.url = url
+
+        if attributes is None:
+            attributes = {}
+        self.attributes = attributes
 
 
 class Field(object):

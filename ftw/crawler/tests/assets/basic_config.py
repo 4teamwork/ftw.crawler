@@ -7,6 +7,7 @@ from ftw.crawler.extractors import DescriptionExtractor
 from ftw.crawler.extractors import IndexingTimeExtractor
 from ftw.crawler.extractors import KeywordsExtractor
 from ftw.crawler.extractors import PlainTextExtractor
+from ftw.crawler.extractors import SiteAttributeExtractor
 from ftw.crawler.extractors import TitleExtractor
 from ftw.crawler.extractors import UIDExtractor
 from ftw.crawler.extractors import URLExtractor
@@ -14,9 +15,14 @@ from ftw.crawler.extractors import URLExtractor
 
 CONFIG = Config(
     sites=[
-        Site('http://www.sitemapxml.co.uk/'),
-        Site('https://www.dropbox.com/'),
-        Site('http://zg.clex.ch'),
+        Site('http://www.sitemapxml.co.uk/',
+             attributes={'site_area': 'Sitemap XML'}),
+
+        Site('https://www.dropbox.com/',
+             attributes={'site_area': 'Dropbox'}),
+
+        Site('http://zg.clex.ch',
+             attributes={'site_area': 'Gesetzessammlung'}),
     ],
     tika='http://localhost:9998/',
     solr='http://localhost:8983/solr',
@@ -39,6 +45,9 @@ CONFIG = Config(
         Field('showinsearch',
               extractor=ConstantExtractor(True),
               type_=bool),
+        Field('site_area',
+              extractor=SiteAttributeExtractor('site_area'),
+              multivalued=True),
         Field('Title',
               extractor=TitleExtractor()),
         Field('topics',

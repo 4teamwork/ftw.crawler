@@ -39,16 +39,23 @@ class ResourceIndependentExtractor(Extractor):
     """
 
 
+class SiteConfigExtractor(Extractor):
+    """Base class for all extractors that extract data based on the `Site`
+    configuration object.
+    """
+
+
 class ExtractionEngine(object):
 
     extractor_types = (
         MetadataExtractor, TextExtractor, URLInfoExtractor,
-        ResourceIndependentExtractor
+        ResourceIndependentExtractor, SiteConfigExtractor
     )
 
-    def __init__(self, config, url_info, fileobj, content_type, filename,
+    def __init__(self, config, site, url_info, fileobj, content_type, filename,
                  fields, converter):
         self.config = config
+        self.site = site
         self.url_info = url_info
         self.fileobj = fileobj
         self.content_type = content_type
@@ -98,6 +105,8 @@ class ExtractionEngine(object):
                 extractor.text = self.text
             if isinstance(extractor, URLInfoExtractor):
                 extractor.url_info = self.url_info
+            if isinstance(extractor, SiteConfigExtractor):
+                extractor.site = self.site
 
             if not isinstance(extractor, ExtractionEngine.extractor_types):
                 self._unkown_extractor_type(extractor)
@@ -181,3 +190,15 @@ class IndexingTimeExtractor(ResourceIndependentExtractor):
 
     def extract_value(self):
         return datetime.utcnow()
+
+
+class SiteAttributeExtractor(SiteConfigExtractor):
+
+    def __init__(self, key):
+        self.key = key
+
+    def extract_value(self):
+        value = self.site.attributes.get(self.key)
+        if value is None:
+            raise NoValueExtracted
+        return value

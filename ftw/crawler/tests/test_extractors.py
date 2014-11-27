@@ -2,6 +2,7 @@ from argparse import Namespace
 from datetime import datetime
 from ftw.crawler.configuration import Field
 from ftw.crawler.configuration import get_config
+from ftw.crawler.configuration import Site
 from ftw.crawler.exceptions import ExtractionError
 from ftw.crawler.exceptions import NoValueExtracted
 from ftw.crawler.extractors import ConstantExtractor
@@ -12,6 +13,7 @@ from ftw.crawler.extractors import IndexingTimeExtractor
 from ftw.crawler.extractors import KeywordsExtractor
 from ftw.crawler.extractors import MetadataExtractor
 from ftw.crawler.extractors import PlainTextExtractor
+from ftw.crawler.extractors import SiteAttributeExtractor
 from ftw.crawler.extractors import TextExtractor
 from ftw.crawler.extractors import TitleExtractor
 from ftw.crawler.extractors import UIDExtractor
@@ -55,9 +57,9 @@ class TestExtractionEngine(TestCase):
         args.config = BASIC_CONFIG
         self.config = get_config(args)
 
-    def _create_engine(self, config=None, url_info=None, fileobj=None,
-                       content_type=None, filename=None, fields=None,
-                       converter=None):
+    def _create_engine(self, config=None, site=None, url_info=None,
+                       fileobj=None, content_type=None, filename=None,
+                       fields=None, converter=None):
         if config is None:
             config = self.config
 
@@ -68,7 +70,7 @@ class TestExtractionEngine(TestCase):
             converter = MagicMock()
 
         engine = ExtractionEngine(
-            config, url_info=url_info, fileobj=fileobj,
+            config, site=site, url_info=url_info, fileobj=fileobj,
             content_type=content_type, filename=filename, fields=fields,
             converter=converter)
         return engine
@@ -96,6 +98,15 @@ class TestExtractionEngine(TestCase):
         engine = self._create_engine(url_info=url_info, fields=[field])
 
         self.assertEquals({'EXAMPLE': 'http://example.org'},
+                          engine.extract_field_values())
+
+    def test_applies_site_config_extractors_to_site(self):
+        field = Field(
+            'EXAMPLE', extractor=SiteAttributeExtractor('name'))
+        site = Site('http://example.org', attributes={'name': 'My Site'})
+        engine = self._create_engine(site=site, fields=[field])
+
+        self.assertEquals({'EXAMPLE': 'My Site'},
                           engine.extract_field_values())
 
     def test_gets_metadata_from_converter(self):
@@ -286,3 +297,21 @@ class TestIndexingTimeExtractor(DatetimeTestCase):
         extractor = IndexingTimeExtractor()
         self.assertDatetimesAlmostEqual(datetime.utcnow(),
                                         extractor.extract_value())
+
+
+class TestSiteAttributeExtractor(TestCase):
+
+    def test_retrieves_attribute_from_site(self):
+        site = Site('http://example.org', attributes={'name': 'My Site'})
+        extractor = SiteAttributeExtractor('name')
+        extractor.site = site
+
+        self.assertEquals('My Site', extractor.extract_value())
+
+    def test_raises_if_attribute_not_found(self):
+        site = Site('http://example.org')
+        extractor = SiteAttributeExtractor('name')
+        extractor.site = site
+
+        with self.assertRaises(NoValueExtracted):
+            extractor.extract_value()

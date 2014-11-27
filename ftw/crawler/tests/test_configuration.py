@@ -45,6 +45,12 @@ class TestSite(TestCase):
         site = Site(url)
         self.assertEquals(url, site.url)
 
+    def test_site_stores_attributes(self):
+        url = 'http://example.org'
+        attributes = {'name': 'My Site'}
+        site = Site(url, attributes=attributes)
+        self.assertEquals({'name': 'My Site'}, site.attributes)
+
 
 class TestField(TestCase):
 

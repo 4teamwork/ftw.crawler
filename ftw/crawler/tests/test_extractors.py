@@ -4,6 +4,7 @@ from ftw.crawler.configuration import Field
 from ftw.crawler.configuration import get_config
 from ftw.crawler.exceptions import ExtractionError
 from ftw.crawler.extractors import ConstantExtractor
+from ftw.crawler.extractors import DescriptionExtractor
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.extractors import Extractor
 from ftw.crawler.extractors import IndexingTimeExtractor
@@ -153,6 +154,14 @@ class TestTitleExtractor(TestCase):
     def test_extracts_title(self):
         extractor = TitleExtractor()
         extractor.metadata = {'foo': None, 'title': 'value', 'bar': None}
+        self.assertEquals('value', extractor.extract_value())
+
+
+class TestDescriptionExtractor(TestCase):
+
+    def test_extracts_description(self):
+        extractor = DescriptionExtractor()
+        extractor.metadata = {'foo': None, 'description': 'value', 'bar': None}
         self.assertEquals('value', extractor.extract_value())
 
 

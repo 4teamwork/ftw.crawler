@@ -3,6 +3,7 @@ from ftw.crawler.configuration import Config
 from ftw.crawler.configuration import Field
 from ftw.crawler.configuration import Site
 from ftw.crawler.extractors import ConstantExtractor
+from ftw.crawler.extractors import DescriptionExtractor
 from ftw.crawler.extractors import IndexingTimeExtractor
 from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import TitleExtractor
@@ -22,6 +23,8 @@ CONFIG = Config(
         Field('allowedRolesAndUsers',
               extractors=[ConstantExtractor(['Anonymous'])],
               multivalued=True),
+        Field('Description',
+              extractors=[DescriptionExtractor()]),
         Field('effective',
               extractors=[IndexingTimeExtractor()],
               type_=datetime),

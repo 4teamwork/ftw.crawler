@@ -125,6 +125,12 @@ class TitleExtractor(MetadataExtractor):
         return self.metadata.get('title')
 
 
+class DescriptionExtractor(MetadataExtractor):
+
+    def extract_value(self):
+        return self.metadata.get('description')
+
+
 class ConstantExtractor(ResourceIndependentExtractor):
 
     def __init__(self, value):

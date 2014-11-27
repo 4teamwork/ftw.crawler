@@ -1,6 +1,8 @@
 METADATA_MAPPING = {
-    'title': ['dcterms:title', 'dc:title', 'title'],
+    'title': ['dcterms:title', 'dc:title', 'DC.title', 'title'],
     'created': ['dcterms:created', 'meta:creation-date', 'Creation-Date'],
+    'description': ['dcterms:description', 'dc:description', 'DC.description',
+                    'description'],
 }
 
 

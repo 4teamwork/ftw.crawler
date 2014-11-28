@@ -12,6 +12,7 @@ from ftw.crawler.extractors import Extractor
 from ftw.crawler.extractors import HTTPHeaderExtractor
 from ftw.crawler.extractors import IndexingTimeExtractor
 from ftw.crawler.extractors import KeywordsExtractor
+from ftw.crawler.extractors import LastModifiedExtractor
 from ftw.crawler.extractors import MetadataExtractor
 from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import SiteAttributeExtractor
@@ -22,6 +23,7 @@ from ftw.crawler.extractors import URLExtractor
 from ftw.crawler.extractors import URLInfoExtractor
 from ftw.crawler.testing import DatetimeTestCase
 from ftw.crawler.tests.helpers import MockConverter
+from ftw.crawler.utils import to_utc
 from mock import MagicMock
 from pkg_resources import resource_filename
 from unittest2 import TestCase
@@ -251,6 +253,29 @@ class TestDescriptionExtractor(TestCase):
         extractor.metadata = {}
         with self.assertRaises(NoValueExtracted):
             extractor.extract_value()
+
+
+class TestLastModifiedExtractor(DatetimeTestCase):
+
+    def test_lastmod_from_urlinfo(self):
+        extractor = LastModifiedExtractor()
+        extractor.url_info = {'lastmod': '2014-12-31T16:45:30+01:00'}
+        self.assertEquals(to_utc(datetime(2014, 12, 31, 15, 45, 30)),
+                          extractor.extract_value())
+
+    def test_falls_back_to_http_last_modified(self):
+        extractor = LastModifiedExtractor()
+        extractor.url_info = {}
+        extractor.headers = {'last-modified': 'Wed, 31 Dec 2014 15:45:30 GMT'}
+        self.assertEquals(to_utc(datetime(2014, 12, 31, 15, 45, 30)),
+                          extractor.extract_value())
+
+    def test_falls_back_to_indexing_date(self):
+        extractor = LastModifiedExtractor()
+        extractor.url_info = {}
+        extractor.headers = {}
+        self.assertDatetimesAlmostEqual(
+            datetime.utcnow(), extractor.extract_value())
 
 
 class TestKeywordsExtractor(TestCase):

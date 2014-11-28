@@ -6,6 +6,7 @@ from ftw.crawler.extractors import ConstantExtractor
 from ftw.crawler.extractors import DescriptionExtractor
 from ftw.crawler.extractors import IndexingTimeExtractor
 from ftw.crawler.extractors import KeywordsExtractor
+from ftw.crawler.extractors import LastModifiedExtractor
 from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import SiteAttributeExtractor
 from ftw.crawler.extractors import TitleExtractor
@@ -40,6 +41,9 @@ CONFIG = Config(
               type_=datetime),
         Field('getRemoteUrl',
               extractor=URLExtractor()),
+        Field('modified',
+              extractor=LastModifiedExtractor(),
+              type_=datetime),
         Field('SearchableText',
               extractor=PlainTextExtractor()),
         Field('showinsearch',

@@ -1,6 +1,7 @@
 from datetime import datetime
 from ftw.crawler.exceptions import ExtractionError
 from ftw.crawler.exceptions import NoValueExtracted
+from ftw.crawler.utils import from_iso_datetime
 from uuid import UUID
 import hashlib
 
@@ -171,6 +172,24 @@ class DescriptionExtractor(MetadataExtractor):
         if value is None:
             raise NoValueExtracted
         return value
+
+
+class LastModifiedExtractor(URLInfoExtractor, HTTPHeaderExtractor):
+
+    def extract_value(self):
+        if 'lastmod' in self.url_info:
+            datestring = self.url_info['lastmod']
+            print datestring
+            utc_dt = from_iso_datetime(datestring)
+            return utc_dt
+
+        if 'last-modified' in self.headers:
+            # TODO: We rely on requests.structures.CaseInsensitiveDict here
+            utc_dt = from_iso_datetime(self.headers['last-modified'])
+            return utc_dt
+
+        utc_dt = IndexingTimeExtractor().extract_value()
+        return utc_dt
 
 
 class KeywordsExtractor(MetadataExtractor):

@@ -9,6 +9,7 @@ from ftw.crawler.extractors import ConstantExtractor
 from ftw.crawler.extractors import DescriptionExtractor
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.extractors import Extractor
+from ftw.crawler.extractors import HTTPHeaderExtractor
 from ftw.crawler.extractors import IndexingTimeExtractor
 from ftw.crawler.extractors import KeywordsExtractor
 from ftw.crawler.extractors import MetadataExtractor
@@ -50,6 +51,15 @@ class ExampleURLInfoExtractor(URLInfoExtractor):
         return self.url_info['loc']
 
 
+class ExampleHTTPHeaderExtractor(HTTPHeaderExtractor):
+
+    def __init__(self, header_name):
+        self.header_name = header_name
+
+    def extract_value(self):
+        return self.headers[self.header_name]
+
+
 class TestExtractionEngine(TestCase):
 
     def setUp(self):
@@ -59,9 +69,12 @@ class TestExtractionEngine(TestCase):
 
     def _create_engine(self, config=None, site=None, url_info=None,
                        fileobj=None, content_type=None, filename=None,
-                       fields=None, converter=None):
+                       headers=None, fields=None, converter=None):
         if config is None:
             config = self.config
+
+        if headers is None:
+            self.headers = {}
 
         if fields is None:
             fields = []
@@ -71,8 +84,8 @@ class TestExtractionEngine(TestCase):
 
         engine = ExtractionEngine(
             config, site=site, url_info=url_info, fileobj=fileobj,
-            content_type=content_type, filename=filename, fields=fields,
-            converter=converter)
+            content_type=content_type, filename=filename, headers=headers,
+            fields=fields, converter=converter)
         return engine
 
     def test_applies_metadata_extractors_to_converter_metadata(self):
@@ -107,6 +120,15 @@ class TestExtractionEngine(TestCase):
         engine = self._create_engine(site=site, fields=[field])
 
         self.assertEquals({'EXAMPLE': 'My Site'},
+                          engine.extract_field_values())
+
+    def test_applies_http_header_extractors_to_headers(self):
+        field = Field(
+            'EXAMPLE', extractor=ExampleHTTPHeaderExtractor('example-header'))
+        headers = {'example-header': 'value'}
+        engine = self._create_engine(headers=headers, fields=[field])
+
+        self.assertEquals({'EXAMPLE': 'value'},
                           engine.extract_field_values())
 
     def test_gets_metadata_from_converter(self):

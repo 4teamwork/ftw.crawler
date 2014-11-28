@@ -44,13 +44,13 @@ def crawl_and_index(tempdir, config):
 
             with mktmp(tempdir) as resource_file:
                 fetcher = ResourceFetcher(url_info, resource_file)
-                resource_fn, content_type = fetcher.fetch()
+                resource_fn, content_type, headers = fetcher.fetch()
             log.info("Resource saved to {}".format(resource_fn))
 
             with open(resource_fn) as resource_file:
                 engine = ExtractionEngine(
                     config, site, url_info, resource_file,
-                    content_type=content_type, filename='',
+                    content_type=content_type, filename='', headers=headers,
                     fields=config.fields, converter=TikaConverter(config.tika))
                 field_values = engine.extract_field_values()
                 print_fields(field_values)

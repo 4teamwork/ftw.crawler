@@ -33,6 +33,12 @@ class URLInfoExtractor(Extractor):
     """
 
 
+class HTTPHeaderExtractor(Extractor):
+    """Base class for all extractors that extract data from the response's
+    HTTP headers.
+    """
+
+
 class ResourceIndependentExtractor(Extractor):
     """Base class for all extractors that don't need any information from
     the resource whatsoever.
@@ -49,17 +55,18 @@ class ExtractionEngine(object):
 
     extractor_types = (
         MetadataExtractor, TextExtractor, URLInfoExtractor,
-        ResourceIndependentExtractor, SiteConfigExtractor
+        ResourceIndependentExtractor, SiteConfigExtractor, HTTPHeaderExtractor
     )
 
     def __init__(self, config, site, url_info, fileobj, content_type, filename,
-                 fields, converter):
+                 headers, fields, converter):
         self.config = config
         self.site = site
         self.url_info = url_info
         self.fileobj = fileobj
         self.content_type = content_type
         self.filename = filename
+        self.headers = headers
         self.fields = fields
 
         self.metadata = converter.extract_metadata(
@@ -107,6 +114,8 @@ class ExtractionEngine(object):
                 extractor.url_info = self.url_info
             if isinstance(extractor, SiteConfigExtractor):
                 extractor.site = self.site
+            if isinstance(extractor, HTTPHeaderExtractor):
+                extractor.headers = self.headers
 
             if not isinstance(extractor, ExtractionEngine.extractor_types):
                 self._unkown_extractor_type(extractor)

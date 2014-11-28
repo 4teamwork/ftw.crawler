@@ -23,4 +23,4 @@ class ResourceFetcher(object):
             self.resource_file.close()
 
         content_type = get_content_type(response.headers.get('Content-Type'))
-        return self.resource_file.name, content_type
+        return self.resource_file.name, content_type, response.headers

@@ -1,13 +1,33 @@
 import datetime
+import dateutil.parser
 import json
+import pytz
 
 
-def isodatetime(dt):
-    """Helper function to create a valid, time zone aware ISO 8601 datetime
-    in UTC (Zulu time).
+def to_utc(dt):
+    """Ensure that a datetime object is time zone aware and in UTC.
+    """
+    if dt.tzinfo is None:
+        # Naive datetime, assume UTC
+        utc_date = pytz.utc.localize(dt)
+    else:
+        # TZ aware datetime. Convert to UTC if necessary
+        utc_date = dt.astimezone(pytz.utc)
+    return utc_date
+
+
+def to_iso_datetime(dt):
+    """Create a valid, time zone aware ISO 8601 date/time string in UTC.
     """
     fmt = "%Y-%m-%dT%H:%M:%S.%fZ"
-    return dt.strftime(fmt)
+    return to_utc(dt).strftime(fmt)
+
+
+def from_iso_datetime(datestring):
+    """Parse an ISO 8601 datetime and create a TZ aware datetime object in UTC.
+    """
+    dt = dateutil.parser.parse(datestring)
+    return to_utc(dt)
 
 
 def get_content_type(header_value):
@@ -27,6 +47,6 @@ class ExtendedJSONEncoder(json.JSONEncoder):
     """
     def default(self, obj):
         if isinstance(obj, datetime.datetime):
-            return isodatetime(obj)
+            return to_iso_datetime(obj)
         else:
             return super(ExtendedJSONEncoder, self).default(obj)

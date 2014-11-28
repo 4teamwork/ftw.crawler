@@ -36,6 +36,8 @@ setup(name='ftw.crawler',
           'setuptools',
           'requests',
           'lxml',
+          'python-dateutil',
+          'pytz',
       ],
 
       tests_require=tests_require,

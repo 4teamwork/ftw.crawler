@@ -9,6 +9,7 @@ from ftw.crawler.extractors import KeywordsExtractor
 from ftw.crawler.extractors import LastModifiedExtractor
 from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import SiteAttributeExtractor
+from ftw.crawler.extractors import SnippetTextExtractor
 from ftw.crawler.extractors import TitleExtractor
 from ftw.crawler.extractors import UIDExtractor
 from ftw.crawler.extractors import URLExtractor
@@ -52,6 +53,8 @@ CONFIG = Config(
         Field('site_area',
               extractor=SiteAttributeExtractor('site_area'),
               multivalued=True),
+        Field('snippetText',
+              extractor=SnippetTextExtractor()),
         Field('Title',
               extractor=TitleExtractor()),
         Field('topics',

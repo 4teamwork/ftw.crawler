@@ -23,9 +23,9 @@ def print_fields(field_values):
     print
     print "=== FIELD VALUES ===="
     for key, value in field_values.items():
-        if key == 'SearchableText':
+        if key in ('SearchableText', 'snippetText'):
             value = repr(value.strip()[:60]) + '...'
-        print "{:<17} {}".format(key + ':', value)
+        print "{:<22} {}".format(key + ':', value)
     print
 
 

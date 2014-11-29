@@ -174,6 +174,34 @@ class DescriptionExtractor(MetadataExtractor):
         return value
 
 
+class SnippetTextExtractor(TextExtractor, MetadataExtractor):
+
+    def _get_title(self):
+        extractor = TitleExtractor()
+        extractor.metadata = self.metadata
+        try:
+            title = extractor.extract_value()
+        except NoValueExtracted:
+            return None
+        return title.strip()
+
+    def _get_plain_text(self):
+        extractor = PlainTextExtractor()
+        extractor.text = self.text
+        plain_text = extractor.extract_value()
+        return plain_text.strip()
+
+    def extract_value(self):
+        plain_text = self._get_plain_text()
+        title = self._get_title()
+
+        snippet_text = plain_text
+        # strip title at start of plain text
+        if title is not None and snippet_text.startswith(title):
+            snippet_text = snippet_text.lstrip(title).strip()
+        return snippet_text
+
+
 class LastModifiedExtractor(URLInfoExtractor, HTTPHeaderExtractor):
 
     def extract_value(self):

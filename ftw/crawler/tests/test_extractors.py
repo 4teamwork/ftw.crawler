@@ -16,6 +16,7 @@ from ftw.crawler.extractors import LastModifiedExtractor
 from ftw.crawler.extractors import MetadataExtractor
 from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import SiteAttributeExtractor
+from ftw.crawler.extractors import SnippetTextExtractor
 from ftw.crawler.extractors import TextExtractor
 from ftw.crawler.extractors import TitleExtractor
 from ftw.crawler.extractors import UIDExtractor
@@ -253,6 +254,21 @@ class TestDescriptionExtractor(TestCase):
         extractor.metadata = {}
         with self.assertRaises(NoValueExtracted):
             extractor.extract_value()
+
+
+class TestSnippetTextExtractor(TestCase):
+
+    def test_returns_plain_text_if_title_not_present(self):
+        extractor = SnippetTextExtractor()
+        extractor.metadata = {}
+        extractor.text = 'Lorem Ipsum'
+        self.assertEquals('Lorem Ipsum', extractor.extract_value())
+
+    def test_strips_title_from_beginning_of_plain_text(self):
+        extractor = SnippetTextExtractor()
+        extractor.metadata = {'title': 'My Title'}
+        extractor.text = 'My Title\nLorem Ipsum'
+        self.assertEquals('Lorem Ipsum', extractor.extract_value())
 
 
 class TestLastModifiedExtractor(DatetimeTestCase):

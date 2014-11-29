@@ -45,6 +45,8 @@ CONFIG = Config(
         Field('modified',
               extractor=LastModifiedExtractor(),
               type_=datetime),
+        Field('path_string',
+              extractor=URLExtractor()),
         Field('SearchableText',
               extractor=PlainTextExtractor()),
         Field('showinsearch',

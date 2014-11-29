@@ -4,6 +4,8 @@ METADATA_MAPPING = {
     'description': ['dcterms:description', 'dc:description', 'DC.description',
                     'description'],
     'keywords': ['dc:subject', 'DC.subject', 'keywords', 'subject'],
+    'creator': ['dcterms:creator', 'dc:creator', 'DC.creator', 'creator',
+                'author'],
 }
 
 

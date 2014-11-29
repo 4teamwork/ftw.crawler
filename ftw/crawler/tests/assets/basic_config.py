@@ -3,6 +3,7 @@ from ftw.crawler.configuration import Config
 from ftw.crawler.configuration import Field
 from ftw.crawler.configuration import Site
 from ftw.crawler.extractors import ConstantExtractor
+from ftw.crawler.extractors import CreatorExtractor
 from ftw.crawler.extractors import DescriptionExtractor
 from ftw.crawler.extractors import IndexingTimeExtractor
 from ftw.crawler.extractors import KeywordsExtractor
@@ -33,6 +34,8 @@ CONFIG = Config(
         Field('allowedRolesAndUsers',
               extractor=ConstantExtractor(['Anonymous']),
               multivalued=True),
+        Field('Creator',
+              extractor=CreatorExtractor()),
         Field('Description',
               extractor=DescriptionExtractor()),
         Field('effective',

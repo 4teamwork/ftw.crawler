@@ -6,6 +6,7 @@ from ftw.crawler.configuration import Site
 from ftw.crawler.exceptions import ExtractionError
 from ftw.crawler.exceptions import NoValueExtracted
 from ftw.crawler.extractors import ConstantExtractor
+from ftw.crawler.extractors import CreatorExtractor
 from ftw.crawler.extractors import DescriptionExtractor
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.extractors import Extractor
@@ -252,6 +253,20 @@ class TestDescriptionExtractor(TestCase):
 
     def test_raises_if_no_value_found(self):
         extractor = DescriptionExtractor()
+        extractor.metadata = {}
+        with self.assertRaises(NoValueExtracted):
+            extractor.extract_value()
+
+
+class TestCreatorExtractor(TestCase):
+
+    def test_extracts_creator(self):
+        extractor = CreatorExtractor()
+        extractor.metadata = {'creator': 'John Doe'}
+        self.assertEquals('John Doe', extractor.extract_value())
+
+    def test_raises_if_no_value_found(self):
+        extractor = CreatorExtractor()
         extractor.metadata = {}
         with self.assertRaises(NoValueExtracted):
             extractor.extract_value()

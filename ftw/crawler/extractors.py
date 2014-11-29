@@ -196,6 +196,15 @@ class DescriptionExtractor(MetadataExtractor):
         return value
 
 
+class CreatorExtractor(MetadataExtractor):
+
+    def extract_value(self):
+        value = self.metadata.get('creator')
+        if value is None:
+            raise NoValueExtracted
+        return value
+
+
 class SnippetTextExtractor(TextExtractor, MetadataExtractor):
 
     def _get_title(self):

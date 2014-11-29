@@ -2,6 +2,9 @@ from datetime import datetime
 from ftw.crawler.exceptions import ExtractionError
 from ftw.crawler.exceptions import NoValueExtracted
 from ftw.crawler.utils import from_iso_datetime
+from slugify import slugify
+from urllib import unquote_plus
+from urlparse import urlparse
 from uuid import UUID
 import hashlib
 
@@ -148,6 +151,25 @@ class UIDExtractor(URLInfoExtractor):
         hash_ = hashlib.md5(url)
         uid = UUID(bytes=hash_.digest())
         return str(uid)
+
+
+class SlugExtractor(URLInfoExtractor):
+
+    def _make_slug(self, value):
+        value = unquote_plus(value)
+        if not isinstance(value, unicode):
+            value = value.decode('utf-8')
+        slug = slugify(value)
+        return slug
+
+    def extract_value(self):
+        url = self.url_info.get('loc')
+        path = urlparse(url).path.rstrip('/')
+        basename = path.split('/')[-1]
+        if basename == '':
+            basename = 'index-html'
+        slug = self._make_slug(basename)
+        return slug
 
 
 class URLExtractor(URLInfoExtractor):

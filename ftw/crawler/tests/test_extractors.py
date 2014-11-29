@@ -16,6 +16,7 @@ from ftw.crawler.extractors import LastModifiedExtractor
 from ftw.crawler.extractors import MetadataExtractor
 from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import SiteAttributeExtractor
+from ftw.crawler.extractors import SlugExtractor
 from ftw.crawler.extractors import SnippetTextExtractor
 from ftw.crawler.extractors import TextExtractor
 from ftw.crawler.extractors import TitleExtractor
@@ -337,6 +338,34 @@ class TestUIDExtractor(TestCase):
         uid2 = extractor.extract_value()
 
         self.assertNotEqual(uid1, uid2)
+
+
+class TestSlugExtractor(TestCase):
+
+    def test_equals_basename_for_simple_urls(self):
+        extractor = SlugExtractor()
+        extractor.url_info = {'loc': 'http://example.org/foo/bar'}
+        self.assertEquals('bar', extractor.extract_value())
+
+    def test_deals_with_trailing_slash(self):
+        extractor = SlugExtractor()
+        extractor.url_info = {'loc': 'http://example.org/foo/bar/'}
+        self.assertEquals('bar', extractor.extract_value())
+
+    def test_defaults_to_index_html_for_empty_basename(self):
+        extractor = SlugExtractor()
+        extractor.url_info = {'loc': 'http://example.org/'}
+        self.assertEquals('index-html', extractor.extract_value())
+
+    def test_deals_with_url_encoding(self):
+        extractor = SlugExtractor()
+        extractor.url_info = {'loc': 'http://example.org/foo%%20bar'}
+        self.assertEquals('foo-bar', extractor.extract_value())
+
+    def test_deals_with_non_ascii_characters(self):
+        extractor = SlugExtractor()
+        extractor.url_info = {'loc': 'http://example.org/b\xc3\xa4rengraben'}
+        self.assertEquals('barengraben', extractor.extract_value())
 
 
 class TestURLExtractor(TestCase):

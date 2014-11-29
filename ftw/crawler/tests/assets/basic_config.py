@@ -9,6 +9,7 @@ from ftw.crawler.extractors import KeywordsExtractor
 from ftw.crawler.extractors import LastModifiedExtractor
 from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import SiteAttributeExtractor
+from ftw.crawler.extractors import SlugExtractor
 from ftw.crawler.extractors import SnippetTextExtractor
 from ftw.crawler.extractors import TitleExtractor
 from ftw.crawler.extractors import UIDExtractor
@@ -40,6 +41,8 @@ CONFIG = Config(
         Field('expires',
               extractor=ConstantExtractor(datetime(2050, 12, 31)),
               type_=datetime),
+        Field('getId',
+              extractor=SlugExtractor()),
         Field('getRemoteUrl',
               extractor=URLExtractor()),
         Field('modified',

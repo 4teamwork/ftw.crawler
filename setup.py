@@ -38,6 +38,7 @@ setup(name='ftw.crawler',
           'lxml',
           'python-dateutil',
           'pytz',
+          'python-slugify',
       ],
 
       tests_require=tests_require,

@@ -41,7 +41,7 @@ def crawl_and_index(tempdir, config):
     sitemaps = fetch_sitemaps(config.sites)
 
     for sitemap in sitemaps:
-        url_infos = sitemap.get_urls()
+        url_infos = sitemap.url_infos
 
         log.info("URLs for {}:".format(sitemap.site.url))
         for url_info in url_infos:

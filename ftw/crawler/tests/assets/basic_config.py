@@ -33,6 +33,7 @@ CONFIG = Config(
 
     unique_field='UID',
     url_field='getRemoteUrl',
+    last_modified_field='modified',
 
     fields=[
         Field('allowedRolesAndUsers',

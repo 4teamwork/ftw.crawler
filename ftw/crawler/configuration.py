@@ -21,6 +21,9 @@ class Config(object):
         self.last_modified_field = last_modified_field
         self.fields = fields
 
+        for site in self.sites:
+            site.bind(self)
+
         for field in self.fields:
             field.bind(self)
 
@@ -33,6 +36,9 @@ class Site(object):
         if attributes is None:
             attributes = {}
         self.attributes = attributes
+
+    def bind(self, config):
+        self.config = config
 
 
 class Field(object):

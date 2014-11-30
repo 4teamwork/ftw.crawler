@@ -30,6 +30,10 @@ CONFIG = Config(
     ],
     tika='http://localhost:9998/',
     solr='http://localhost:8983/solr',
+
+    unique_field='UID',
+    url_field='getRemoteUrl',
+
     fields=[
         Field('allowedRolesAndUsers',
               extractor=ConstantExtractor(['Anonymous']),

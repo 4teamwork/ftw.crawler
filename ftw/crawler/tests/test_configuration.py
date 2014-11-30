@@ -17,9 +17,12 @@ class TestConfig(TestCase):
         self.site = Site('http://example.org')
         self.tika = 'http://localhost:9998'
         self.solr = 'http://localhost:8983/solr'
+        self.unique_field = 'UID'
+        self.url_field = 'url'
         self.field = Field('foo', extractor=None)
 
-        self.config = Config([self.site], self.tika, self.solr, [self.field])
+        self.config = Config([self.site], self.tika, self.solr,
+                             self.unique_field, self.url_field, [self.field])
 
     def test_config_stores_sites(self):
         self.assertEquals([self.site], self.config.sites)
@@ -29,6 +32,12 @@ class TestConfig(TestCase):
 
     def test_config_stores_solr(self):
         self.assertEquals(self.solr, self.config.solr)
+
+    def test_config_stores_unique_field(self):
+        self.assertEquals(self.unique_field, self.config.unique_field)
+
+    def test_config_stores_url_field(self):
+        self.assertEquals(self.url_field, self.config.url_field)
 
     def test_config_stores_fields(self):
         self.assertEquals([self.field], self.config.fields)

@@ -3,6 +3,7 @@ from ftw.crawler.configuration import get_config
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.fetcher import ResourceFetcher
 from ftw.crawler.gatherer import URLGatherer
+from ftw.crawler.purging import purge_removed_docs_from_index
 from ftw.crawler.resource import ResourceInfo
 from ftw.crawler.sitemap import SitemapParser
 from ftw.crawler.solr import SolrConnector
@@ -38,7 +39,12 @@ def fetch_sitemaps(sites):
 
 def crawl_and_index(tempdir, config):
     solr = SolrConnector(config.solr)
+
+    # Fetch all sitemaps
     sitemaps = fetch_sitemaps(config.sites)
+
+    # Purge docs that have been removed from sitemap from Solr index
+    purge_removed_docs_from_index(config, solr, sitemaps)
 
     for sitemap in sitemaps:
         url_infos = sitemap.url_infos

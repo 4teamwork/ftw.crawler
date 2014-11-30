@@ -1,3 +1,5 @@
+from ftw.crawler.sitemap import SitemapParser
+from ftw.crawler.tests.helpers import get_asset
 from ftw.crawler.tests.helpers import MockResponse
 from lxml import etree
 from unittest2 import TestCase
@@ -38,6 +40,19 @@ class DatetimeTestCase(TestCase):
             expected, actual, delta)
         return self.assertAlmostEqual(expected_ts, actual_ts,
                                       delta=delta, msg=msg)
+
+
+SITEMAP = get_asset('sitemap.xml')
+
+
+class SitemapTestCase(TestCase):
+
+    def create_sitemap(self, urls, site=None):
+        sitemap = SitemapParser(SITEMAP, site=site)
+        del sitemap.tree
+        url_infos = [{'loc': url} for url in urls]
+        sitemap._url_infos = url_infos
+        return sitemap
 
 
 SOLR_RESULTS_TEMPLATE = """\

@@ -21,6 +21,9 @@ class Config(object):
         self.last_modified_field = last_modified_field
         self.fields = fields
 
+        for field in self.fields:
+            field.bind(self)
+
 
 class Site(object):
 
@@ -43,6 +46,9 @@ class Field(object):
         self.multivalued = multivalued
 
         self.extractor.bind(self)
+
+    def bind(self, config):
+        self.config = config
 
     def __repr__(self):
         desc = "<Field '{}' type_={} required={} multivalued={} extractor={}>"

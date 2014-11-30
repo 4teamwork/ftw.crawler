@@ -48,6 +48,9 @@ class TestConfig(TestCase):
     def test_config_stores_fields(self):
         self.assertEquals([self.field], self.config.fields)
 
+    def test_binds_fields_to_self(self):
+        self.assertEquals(self.field.config, self.config)
+
 
 class TestSite(TestCase):
 

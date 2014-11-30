@@ -1,3 +1,4 @@
+from ftw.crawler.configuration import Site
 from ftw.crawler.sitemap import SitemapParser
 from ftw.crawler.tests.helpers import get_asset
 from unittest2 import TestCase
@@ -33,3 +34,8 @@ class TestSitemapParser(TestCase):
             {'loc': 'http://example.org/foo'},
             {'loc': 'http://example.org/bar'}],
             list(url_infos))
+
+    def test_keeps_reference_to_site(self):
+        site = Site('http://example.org')
+        sitemap = SitemapParser(SITEMAP_REQ_ONLY, site=site)
+        self.assertEqual(site, sitemap.site)

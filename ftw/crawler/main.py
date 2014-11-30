@@ -26,23 +26,29 @@ def print_fields(field_values):
     print
 
 
+def fetch_sitemaps(sites):
+    sitemaps = []
+    for site in sites:
+        gatherer = URLGatherer(site.url)
+        sitemap_xml = gatherer.fetch_sitemap()
+        sitemap = SitemapParser(sitemap_xml, site=site)
+        sitemaps.append(sitemap)
+    return sitemaps
+
+
 def crawl_and_index(tempdir, config):
     solr = SolrConnector(config.solr)
+    sitemaps = fetch_sitemaps(config.sites)
 
-    for site in config.sites:
-        gatherer = URLGatherer(site.url)
-
-        # Fetch sitemap
-        sitemap_xml = gatherer.fetch_sitemap()
-        sitemap = SitemapParser(sitemap_xml)
+    for sitemap in sitemaps:
         url_infos = sitemap.get_urls()
 
-        log.info("URLs for {}:".format(site.url))
+        log.info("URLs for {}:".format(sitemap.site.url))
         for url_info in url_infos:
             log.info("{} {}".format(url_info['loc'], str(url_info)))
 
             # Fetch and save resource
-            resource_info = ResourceInfo(site=site, url_info=url_info)
+            resource_info = ResourceInfo(site=sitemap.site, url_info=url_info)
             fetcher = ResourceFetcher(resource_info, tempdir)
             resource_info = fetcher.fetch()
             log.info("Resource saved to {}".format(resource_info.filename))

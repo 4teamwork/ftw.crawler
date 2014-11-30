@@ -5,26 +5,6 @@ def get_asset(filename):
     return resource_string('ftw.crawler.tests.assets', filename)
 
 
-class MockFile(object):
-
-    def __init__(self, name=None):
-        self.name = name
-        self._buf = ''
-
-    def close(self):
-        pass
-
-    def write(self, data):
-        self._buf += data
-        return len(data)
-
-    def seek(self, pos):
-        pass
-
-    def read(self):
-        return self._buf
-
-
 class MockRequest(object):
 
     def __init__(self, url='http://example.org'):
@@ -56,8 +36,8 @@ class MockConverter(object):
 
         self.text = text
 
-    def extract_metadata(self, fileobj, content_type, filename):
+    def extract_metadata(self, resource_info):
         return self.metadata
 
-    def extract_text(self, fileobj, content_type, filename):
+    def extract_text(self, resource_info):
         return self.text

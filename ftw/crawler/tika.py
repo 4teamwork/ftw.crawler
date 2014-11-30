@@ -13,29 +13,30 @@ class TikaConverter(object):
     def __init__(self, tika_url):
         self.tika_url = tika_url.rstrip('/')
 
-    def _tika_request(self, endpoint, fileobj, headers):
+    def _tika_request(self, endpoint, resource_info, headers):
         tika_endpoint = '/'.join((self.tika_url, endpoint))
-        fileobj.seek(0)
-        response = requests.put(tika_endpoint, data=fileobj, headers=headers)
+        with open(resource_info.filename) as fileobj:
+            response = requests.put(
+                tika_endpoint, data=fileobj, headers=headers)
         return response
 
-    def extract_metadata(self, fileobj, content_type, filename=''):
+    def extract_metadata(self, resource_info):
         log.info("Extracting metadata from '{}' with "
-                 "tika JAXRS server.".format(filename))
+                 "tika JAXRS server.".format(resource_info.filename))
 
-        headers = {'Content-type': content_type}
-        response = self._tika_request('meta', fileobj, headers)
+        headers = {'Content-type': resource_info.content_type}
+        response = self._tika_request('meta', resource_info, headers)
 
         csv_file = io.BytesIO(response.content)
         csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
         metadata = dict(iter(csv_reader))
         return SimpleMetadata(metadata)
 
-    def extract_text(self, fileobj, content_type, filename=''):
+    def extract_text(self, resource_info):
         log.info("Extracting plain text from '{}' with "
-                 "tika JAXRS server.".format(filename))
+                 "tika JAXRS server.".format(resource_info.filename))
 
-        headers = {'Content-type': content_type,
+        headers = {'Content-type': resource_info.content_type,
                    'Accept': 'text/plain'}
-        response = self._tika_request('tika', fileobj, headers)
+        response = self._tika_request('tika', resource_info, headers)
         return response.content

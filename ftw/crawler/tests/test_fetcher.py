@@ -1,54 +1,58 @@
 from ftw.crawler.exceptions import FetchingError
 from ftw.crawler.fetcher import ResourceFetcher
-from ftw.crawler.tests.helpers import MockFile
+from ftw.crawler.resource import ResourceInfo
 from ftw.crawler.tests.helpers import MockResponse
-from mock import MagicMock
 from mock import patch
 from unittest2 import TestCase
+import shutil
+import tempfile
 
 
 class TestResourceFetcher(TestCase):
 
-    def _create_fetcher(self, url_info=None, resource_file=None):
-        if url_info is None:
-            url_info = MagicMock()
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp(prefix='ftw.crawler.tests_')
 
-        if resource_file is None:
-            resource_file = MagicMock()
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
 
-        return ResourceFetcher(url_info=url_info, resource_file=resource_file)
+    def _create_fetcher(self, resource_info=None, tempdir=None):
+        if resource_info is None:
+            resource_info = ResourceInfo()
+
+        return ResourceFetcher(resource_info=resource_info, tempdir=tempdir)
 
     @patch('requests.get')
     def test_fetches_and_saves_resource(self, request):
         request.return_value = MockResponse(
             content='MARKER', headers={'Content-Type': 'text/html'})
-        resource_file = MockFile(name='/var/tmp/foo')
-        url_info = {'loc': 'http://example.org/'}
+        resource_info = ResourceInfo(url_info={'loc': 'http://example.org/'})
 
-        fetcher = self._create_fetcher(url_info, resource_file)
-        resource_fn, content_type, headers = fetcher.fetch()
+        fetcher = self._create_fetcher(resource_info, tempdir=self.tempdir)
+        resource_info = fetcher.fetch()
 
-        self.assertEquals('/var/tmp/foo', resource_fn)
-        self.assertEquals('MARKER', resource_file.read())
-        self.assertEquals('text/html', content_type)
+        self.assertTrue(resource_info.filename.startswith(self.tempdir))
+
+        self.assertEquals('text/html', resource_info.content_type)
+        with open(resource_info.filename) as resource_file:
+            self.assertEquals('MARKER', resource_file.read())
 
     @patch('requests.get')
     def test_returns_http_headers(self, request):
         request.return_value = MockResponse(
-            headers={'Content-Type': 'text/html'})
+            content='', headers={'Content-Type': 'text/html'})
+        resource_info = ResourceInfo(url_info={'loc': 'http://example.org/'})
+        fetcher = self._create_fetcher(resource_info=resource_info)
+        resource_info = fetcher.fetch()
 
-        fetcher = self._create_fetcher()
-        resource_fn, content_type, headers = fetcher.fetch()
-
-        self.assertEquals({'Content-Type': 'text/html'}, headers)
+        self.assertEquals({'Content-Type': 'text/html'}, resource_info.headers)
 
     @patch('requests.get')
     def test_raises_if_not_200_ok(self, request):
         request.return_value = MockResponse(status_code=404)
-        resource_file = MockFile()
 
-        url_info = {'loc': 'http://example.org/'}
-        fetcher = ResourceFetcher(url_info, resource_file)
+        resource_info = ResourceInfo(url_info={'loc': 'http://example.org/'})
+        fetcher = self._create_fetcher(resource_info)
         with self.assertRaises(FetchingError):
             fetcher.fetch()
 
@@ -56,10 +60,9 @@ class TestResourceFetcher(TestCase):
     def test_doesnt_choke_on_charset_in_content_type(self, request):
         request.return_value = MockResponse(
             content='', headers={'Content-Type': 'text/html; charset=utf-8'})
-        resource_file = MockFile()
 
-        url_info = {'loc': 'http://example.org/'}
-        fetcher = ResourceFetcher(url_info, resource_file)
-        fn, content_type, headers = fetcher.fetch()
+        resource_info = ResourceInfo(url_info={'loc': 'http://example.org/'})
+        fetcher = self._create_fetcher(resource_info)
+        resource_info = fetcher.fetch()
 
-        self.assertEquals('text/html', content_type)
+        self.assertEquals('text/html', resource_info.content_type)

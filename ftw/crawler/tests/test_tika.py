@@ -1,9 +1,15 @@
+from ftw.crawler.resource import ResourceInfo
 from ftw.crawler.tests.helpers import MockResponse
 from ftw.crawler.tika import TikaConverter
+from mock import mock_open
 from mock import patch
 from unittest2 import TestCase
 import csv
 import io
+
+
+# TODO: Figure out how to mock open() without using module globals
+open_mock = mock_open()
 
 
 class TestTikaConverter(TestCase):
@@ -16,34 +22,34 @@ class TestTikaConverter(TestCase):
         return csv_buffer.getvalue()
 
     @patch('requests.put')
+    @patch('ftw.crawler.tika.open', open_mock, create=True)
     def test_extracts_metadata(self, request):
-        fileobj = io.BytesIO('')
+        resource_info = ResourceInfo(content_type='application/pdf')
         metadata = {'title': 'Some title',
                     'creator': 'John Doe'}
         request.return_value = MockResponse(content=self._to_csv(metadata))
 
         tika = TikaConverter('http://localhost:9998')
-        extracted_metadata = tika.extract_metadata(
-            fileobj, 'application/pdf', 'foo.pdf')
+        extracted_metadata = tika.extract_metadata(resource_info)
 
         self.assertEquals(metadata, extracted_metadata)
         request.assert_called_with(
             'http://localhost:9998/meta',
             headers={'Content-type': 'application/pdf'},
-            data=fileobj)
+            data=open_mock.return_value)
 
     @patch('requests.put')
+    @patch('ftw.crawler.tika.open', open_mock, create=True)
     def test_extracts_text(self, request):
-        fileobj = io.BytesIO('')
+        resource_info = ResourceInfo(content_type='application/pdf')
         request.return_value = MockResponse(content='foo bar')
 
         tika = TikaConverter('http://localhost:9998')
-        extracted_text = tika.extract_text(
-            fileobj, 'application/pdf', 'foo.pdf')
+        extracted_text = tika.extract_text(resource_info)
 
         self.assertEquals('foo bar', extracted_text)
         request.assert_called_with(
             'http://localhost:9998/tika',
             headers={'Content-type': 'application/pdf',
                      'Accept': 'text/plain'},
-            data=fileobj)
+            data=open_mock.return_value)

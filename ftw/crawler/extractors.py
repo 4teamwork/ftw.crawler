@@ -12,7 +12,7 @@ import hashlib
 class Extractor(object):
     """Base class for all extractors.
     """
-    def extract_value(self):
+    def extract_value(self, resource_info):
         raise NotImplementedError
 
     def __repr__(self):
@@ -62,22 +62,15 @@ class ExtractionEngine(object):
         ResourceIndependentExtractor, SiteConfigExtractor, HTTPHeaderExtractor
     )
 
-    def __init__(self, config, site, url_info, fileobj, content_type, filename,
-                 headers, fields, converter):
+    def __init__(self, config, resource_info, converter):
         self.config = config
-        self.site = site
-        self.url_info = url_info
-        self.fileobj = fileobj
-        self.content_type = content_type
-        self.filename = filename
-        self.headers = headers
-        self.fields = fields
+        self.resource_info = resource_info
 
-        self.metadata = converter.extract_metadata(
-            self.fileobj, self.content_type, self.filename)
+        self.resource_info.metadata = converter.extract_metadata(
+            self.resource_info)
 
-        self.text = converter.extract_text(
-            self.fileobj, self.content_type, self.filename)
+        self.resource_info.text = converter.extract_text(
+            self.resource_info)
 
     def _unkown_extractor_type(self, extractor):
         cls = extractor.__class__
@@ -108,24 +101,14 @@ class ExtractionEngine(object):
 
     def extract_field_values(self):
         field_values = {}
-        for field in self.fields:
+        for field in self.config.fields:
             extractor = field.extractor
-            if isinstance(extractor, MetadataExtractor):
-                extractor.metadata = self.metadata
-            if isinstance(extractor, TextExtractor):
-                extractor.text = self.text
-            if isinstance(extractor, URLInfoExtractor):
-                extractor.url_info = self.url_info
-            if isinstance(extractor, SiteConfigExtractor):
-                extractor.site = self.site
-            if isinstance(extractor, HTTPHeaderExtractor):
-                extractor.headers = self.headers
 
             if not isinstance(extractor, ExtractionEngine.extractor_types):
                 self._unkown_extractor_type(extractor)
 
             try:
-                value = extractor.extract_value()
+                value = extractor.extract_value(self.resource_info)
             except NoValueExtracted:
                 if field.required:
                     value = self._get_field_default(field)
@@ -140,14 +123,14 @@ class ExtractionEngine(object):
 
 class PlainTextExtractor(TextExtractor):
 
-    def extract_value(self):
-        return self.text
+    def extract_value(self, resource_info):
+        return resource_info.text
 
 
 class UIDExtractor(URLInfoExtractor):
 
-    def extract_value(self):
-        url = self.url_info['loc']
+    def extract_value(self, resource_info):
+        url = resource_info.url_info['loc']
         hash_ = hashlib.md5(url)
         uid = UUID(bytes=hash_.digest())
         return str(uid)
@@ -162,8 +145,8 @@ class SlugExtractor(URLInfoExtractor):
         slug = slugify(value)
         return slug
 
-    def extract_value(self):
-        url = self.url_info.get('loc')
+    def extract_value(self, resource_info):
+        url = resource_info.url_info.get('loc')
         path = urlparse(url).path.rstrip('/')
         basename = path.split('/')[-1]
         if basename == '':
@@ -174,14 +157,14 @@ class SlugExtractor(URLInfoExtractor):
 
 class URLExtractor(URLInfoExtractor):
 
-    def extract_value(self):
-        return self.url_info.get('loc')
+    def extract_value(self, resource_info):
+        return resource_info.url_info.get('loc')
 
 
 class TitleExtractor(MetadataExtractor):
 
-    def extract_value(self):
-        value = self.metadata.get('title')
+    def extract_value(self, resource_info):
+        value = resource_info.metadata.get('title')
         if value is None:
             raise NoValueExtracted
         return value
@@ -189,8 +172,8 @@ class TitleExtractor(MetadataExtractor):
 
 class DescriptionExtractor(MetadataExtractor):
 
-    def extract_value(self):
-        value = self.metadata.get('description')
+    def extract_value(self, resource_info):
+        value = resource_info.metadata.get('description')
         if value is None:
             raise NoValueExtracted
         return value
@@ -198,8 +181,8 @@ class DescriptionExtractor(MetadataExtractor):
 
 class CreatorExtractor(MetadataExtractor):
 
-    def extract_value(self):
-        value = self.metadata.get('creator')
+    def extract_value(self, resource_info):
+        value = resource_info.metadata.get('creator')
         if value is None:
             raise NoValueExtracted
         return value
@@ -207,24 +190,22 @@ class CreatorExtractor(MetadataExtractor):
 
 class SnippetTextExtractor(TextExtractor, MetadataExtractor):
 
-    def _get_title(self):
+    def _get_title(self, resource_info):
         extractor = TitleExtractor()
-        extractor.metadata = self.metadata
         try:
-            title = extractor.extract_value()
+            title = extractor.extract_value(resource_info)
         except NoValueExtracted:
             return None
         return title.strip()
 
-    def _get_plain_text(self):
+    def _get_plain_text(self, resource_info):
         extractor = PlainTextExtractor()
-        extractor.text = self.text
-        plain_text = extractor.extract_value()
+        plain_text = extractor.extract_value(resource_info)
         return plain_text.strip()
 
-    def extract_value(self):
-        plain_text = self._get_plain_text()
-        title = self._get_title()
+    def extract_value(self, resource_info):
+        plain_text = self._get_plain_text(resource_info)
+        title = self._get_title(resource_info)
 
         snippet_text = plain_text
         # strip title at start of plain text
@@ -235,26 +216,26 @@ class SnippetTextExtractor(TextExtractor, MetadataExtractor):
 
 class LastModifiedExtractor(URLInfoExtractor, HTTPHeaderExtractor):
 
-    def extract_value(self):
-        if 'lastmod' in self.url_info:
-            datestring = self.url_info['lastmod']
+    def extract_value(self, resource_info):
+        if 'lastmod' in resource_info.url_info:
+            datestring = resource_info.url_info['lastmod']
             print datestring
             utc_dt = from_iso_datetime(datestring)
             return utc_dt
 
-        if 'last-modified' in self.headers:
+        if 'last-modified' in resource_info.headers:
             # TODO: We rely on requests.structures.CaseInsensitiveDict here
-            utc_dt = from_iso_datetime(self.headers['last-modified'])
+            utc_dt = from_iso_datetime(resource_info.headers['last-modified'])
             return utc_dt
 
-        utc_dt = IndexingTimeExtractor().extract_value()
+        utc_dt = IndexingTimeExtractor().extract_value(resource_info)
         return utc_dt
 
 
 class KeywordsExtractor(MetadataExtractor):
 
-    def extract_value(self):
-        value = self.metadata.get('keywords')
+    def extract_value(self, resource_info):
+        value = resource_info.metadata.get('keywords')
         if value is None:
             raise NoValueExtracted
         if ',' in value:
@@ -269,13 +250,13 @@ class ConstantExtractor(ResourceIndependentExtractor):
     def __init__(self, value):
         self.value = value
 
-    def extract_value(self):
+    def extract_value(self, resource_info):
         return self.value
 
 
 class IndexingTimeExtractor(ResourceIndependentExtractor):
 
-    def extract_value(self):
+    def extract_value(self, resource_info):
         return datetime.utcnow()
 
 
@@ -284,8 +265,8 @@ class SiteAttributeExtractor(SiteConfigExtractor):
     def __init__(self, key):
         self.key = key
 
-    def extract_value(self):
-        value = self.site.attributes.get(self.key)
+    def extract_value(self, resource_info):
+        value = resource_info.site.attributes.get(self.key)
         if value is None:
             raise NoValueExtracted
         return value

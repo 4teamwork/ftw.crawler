@@ -1,26 +1,34 @@
 from ftw.crawler.exceptions import FetchingError
 from ftw.crawler.utils import get_content_type
 import requests
+import tempfile
 
 
 class ResourceFetcher(object):
 
-    def __init__(self, url_info, resource_file):
-        self.url_info = url_info
-        self.resource_file = resource_file
+    def __init__(self, resource_info, tempdir):
+        self.resource_info = resource_info
+        self.tempdir = tempdir
+
+    def _mktmp(self):
+        return tempfile.NamedTemporaryFile(dir=self.tempdir, delete=False)
 
     def fetch(self):
-        url = self.url_info['loc']
+        resource_info = self.resource_info
+        url = resource_info.url_info['loc']
         response = requests.get(url)
         if not response.status_code == 200:
             raise FetchingError("Could not fetch {}. Got status {}".format(
                 url, response.status_code))
 
-        try:
-            self.resource_file.seek(0)
-            self.resource_file.write(response.content)
-        finally:
-            self.resource_file.close()
+        with self._mktmp() as resource_file:
+            resource_file.write(response.content)
 
         content_type = get_content_type(response.headers.get('Content-Type'))
-        return self.resource_file.name, content_type, response.headers
+
+        resource_info.filename = resource_file.name
+        resource_info.content_type = content_type
+        resource_info.headers = response.headers
+        resource_info.filename = resource_file.name
+
+        return resource_info

@@ -3,6 +3,7 @@ from ftw.crawler.configuration import get_config
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.fetcher import ResourceFetcher
 from ftw.crawler.gatherer import URLGatherer
+from ftw.crawler.resource import ResourceInfo
 from ftw.crawler.sitemap import SitemapParser
 from ftw.crawler.solr import SolrConnector
 from ftw.crawler.tika import TikaConverter
@@ -13,10 +14,6 @@ import tempfile
 
 
 log = logging.getLogger(__name__)
-
-
-def mktmp(tempdir):
-    return tempfile.NamedTemporaryFile(dir=tempdir, delete=False)
 
 
 def print_fields(field_values):
@@ -34,6 +31,8 @@ def crawl_and_index(tempdir, config):
 
     for site in config.sites:
         gatherer = URLGatherer(site.url)
+
+        # Fetch sitemap
         sitemap_xml = gatherer.fetch_sitemap()
         sitemap = SitemapParser(sitemap_xml)
         url_infos = sitemap.get_urls()
@@ -42,20 +41,20 @@ def crawl_and_index(tempdir, config):
         for url_info in url_infos:
             log.info("{} {}".format(url_info['loc'], str(url_info)))
 
-            with mktmp(tempdir) as resource_file:
-                fetcher = ResourceFetcher(url_info, resource_file)
-                resource_fn, content_type, headers = fetcher.fetch()
-            log.info("Resource saved to {}".format(resource_fn))
+            # Fetch and save resource
+            resource_info = ResourceInfo(site=site, url_info=url_info)
+            fetcher = ResourceFetcher(resource_info, tempdir)
+            resource_info = fetcher.fetch()
+            log.info("Resource saved to {}".format(resource_info.filename))
 
-            with open(resource_fn) as resource_file:
-                engine = ExtractionEngine(
-                    config, site, url_info, resource_file,
-                    content_type=content_type, filename='', headers=headers,
-                    fields=config.fields, converter=TikaConverter(config.tika))
-                field_values = engine.extract_field_values()
-                print_fields(field_values)
-            os.unlink(resource_fn)
+            # Extract metadata and plain text
+            engine = ExtractionEngine(
+                config, resource_info, converter=TikaConverter(config.tika))
+            field_values = engine.extract_field_values()
+            print_fields(field_values)
+            os.unlink(resource_info.filename)
 
+            # Index into Solr
             log.info("Indexing {} into solr.".format(url_info['loc']))
             solr.index(field_values)
 

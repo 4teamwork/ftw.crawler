@@ -20,7 +20,7 @@ class TestConfig(TestCase):
         self.unique_field = 'UID'
         self.url_field = 'url'
         self.last_modified_field = 'modified'
-        self.field = Field('foo', extractor=None)
+        self.field = Field('foo', extractor=Extractor())
 
         self.config = Config([self.site], self.tika, self.solr,
                              self.unique_field, self.url_field,
@@ -75,20 +75,25 @@ class TestField(TestCase):
         self.type_ = str
 
     def test_field_stores_name(self):
-        field = Field(self.name, [self.extractor])
+        field = Field(self.name, self.extractor)
         self.assertEquals(self.name, field.name)
 
     def test_field_stores_extractor(self):
-        field = Field(self.name, [self.extractor])
-        self.assertEquals([self.extractor], field.extractor)
+        field = Field(self.name, self.extractor)
+        self.assertEquals(self.extractor, field.extractor)
 
     def test_field_stores_type(self):
-        field = Field(self.name, [self.extractor], self.type_)
+        field = Field(self.name, self.extractor, self.type_)
         self.assertEquals(self.type_, field.type_)
 
     def test_field_stores_required(self):
-        field = Field(self.name, [self.extractor], self.type_, required=True)
+        field = Field(self.name, self.extractor, self.type_, required=True)
         self.assertEquals(True, field.required)
+
+    def test_field_binds_extractor_to_self(self):
+        extractor = Extractor()
+        field = Field(self.name, extractor, self.type_, required=True)
+        self.assertEquals(field, extractor.field)
 
 
 class TestGetConfig(TestCase):

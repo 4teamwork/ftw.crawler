@@ -154,7 +154,7 @@ class TestExtractionEngine(TestCase):
         self.assertEquals('foo bar', resource_info.text)
 
     def test_raises_type_error_for_unknown_extractor_type(self):
-        field = Field('foo', extractor=object())
+        field = Field('foo', extractor=Extractor())
         engine = self._create_engine(fields=[field])
 
         with self.assertRaises(ExtractionError):

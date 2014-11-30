@@ -13,8 +13,12 @@ import hashlib
 class Extractor(object):
     """Base class for all extractors.
     """
+
     def extract_value(self, resource_info):
         raise NotImplementedError
+
+    def bind(self, field):
+        self.field = field
 
     def __repr__(self):
         cls = self.__class__

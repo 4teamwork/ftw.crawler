@@ -42,6 +42,8 @@ class Field(object):
         self.required = required
         self.multivalued = multivalued
 
+        self.extractor.bind(self)
+
     def __repr__(self):
         desc = "<Field '{}' type_={} required={} multivalued={} extractor={}>"
         return desc.format(

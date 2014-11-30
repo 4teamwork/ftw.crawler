@@ -16,3 +16,8 @@ class ExtractionError(FtwCrawlerException):
 class NoValueExtracted(ExtractionError):
     """The extractor was unable to extract a value.
     """
+
+
+class SolrError(FtwCrawlerException):
+    """Solr returned a non-200 response for an operation.
+    """

@@ -1,6 +1,8 @@
+from ftw.crawler.tests.helpers import MockResponse
 from lxml import etree
 from unittest2 import TestCase
 import calendar
+import json
 
 
 def timestamp(dt):
@@ -36,3 +38,42 @@ class DatetimeTestCase(TestCase):
             expected, actual, delta)
         return self.assertAlmostEqual(expected_ts, actual_ts,
                                       delta=delta, msg=msg)
+
+
+SOLR_RESULTS_TEMPLATE = """\
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 0,
+    "params": {
+    }
+  },
+  "response": {
+    "numFound": %s,
+    "start": 0,
+    "docs": %s
+  }
+}
+"""
+
+
+class SolrTestCase(TestCase):
+
+    def create_solr_response(self, status=200, content=None, headers=None):
+        if content is None:
+            content = '{"responseHeader":{"status":%s,"QTime":10}}' % status
+
+        if headers is None:
+            headers = {'content-type': 'application/json; charset=UTF-8'}
+
+        response = MockResponse(
+            status_code=status,
+            content=content,
+            headers={'content-type': 'application/json; charset=UTF-8'})
+        return response
+
+    def create_solr_results(self, docs):
+        docs = json.dumps(docs)
+        content = SOLR_RESULTS_TEMPLATE % (len(docs), docs)
+        response = self.create_solr_response(content=content)
+        return response

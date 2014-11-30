@@ -1,4 +1,5 @@
 from pkg_resources import resource_string
+import json
 
 
 def get_asset(filename):
@@ -25,6 +26,9 @@ class MockResponse(object):
         if request is None:
             request = MockRequest()
         self.request = request
+
+    def json(self):
+        return json.loads(self.content)
 
 
 class MockConverter(object):

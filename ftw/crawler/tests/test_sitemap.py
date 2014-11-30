@@ -39,3 +39,13 @@ class TestSitemapParser(TestCase):
         site = Site('http://example.org')
         sitemap = SitemapParser(SITEMAP_REQ_ONLY, site=site)
         self.assertEqual(site, sitemap.site)
+
+    def test_supports_testing_for_membership(self):
+        sitemap = SitemapParser(SITEMAP_REQ_ONLY)
+        self.assertIn('http://example.org/foo', sitemap)
+        self.assertNotIn('http://example.org/not_contained', sitemap)
+
+    def test_testing_for_membership_is_case_insensitive(self):
+        sitemap = SitemapParser(SITEMAP_REQ_ONLY)
+        self.assertIn('http://example.org/foo', sitemap)
+        self.assertIn('HTTP://EXAMPLE.ORG/FOO', sitemap)

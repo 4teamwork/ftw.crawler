@@ -27,3 +27,9 @@ class SitemapParser(object):
                 if results:
                     url_info[name] = results[0]
             yield url_info
+
+    def __contains__(self, url):
+        """Tests whether an URL is listed in this sitemap (case-insensitive).
+        """
+        url_infos = self.get_urls()
+        return url.lower() in (ui['loc'].lower() for ui in url_infos)

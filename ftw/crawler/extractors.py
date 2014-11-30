@@ -2,6 +2,7 @@ from datetime import datetime
 from ftw.crawler.exceptions import ExtractionError
 from ftw.crawler.exceptions import NoValueExtracted
 from ftw.crawler.utils import from_iso_datetime
+from ftw.crawler.utils import get_content_type
 from slugify import slugify
 from urllib import unquote_plus
 from urlparse import urlparse
@@ -270,3 +271,32 @@ class SiteAttributeExtractor(SiteConfigExtractor):
         if value is None:
             raise NoValueExtracted
         return value
+
+
+class HeaderMappingExtractor(HTTPHeaderExtractor):
+
+    def __init__(self, header_name, mapping, default=None):
+        self.header_name = header_name
+        self.mapping = mapping
+        self.default = default
+
+    def _default_or_raise(self):
+        if self.default is not None:
+            return self.default
+        else:
+            raise NoValueExtracted
+
+    def extract_value(self, resource_info):
+        header_value = resource_info.headers.get(self.header_name)
+        if header_value is None:
+            # Header not present
+            return self._default_or_raise()
+
+        if self.header_name.lower() == 'content-type':
+            header_value = get_content_type(header_value)
+
+        if header_value in self.mapping:
+            return self.mapping[header_value]
+        else:
+            # Header present but not mapped
+            return self._default_or_raise()

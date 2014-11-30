@@ -11,6 +11,7 @@ from ftw.crawler.extractors import CreatorExtractor
 from ftw.crawler.extractors import DescriptionExtractor
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.extractors import Extractor
+from ftw.crawler.extractors import HeaderMappingExtractor
 from ftw.crawler.extractors import HTTPHeaderExtractor
 from ftw.crawler.extractors import IndexingTimeExtractor
 from ftw.crawler.extractors import KeywordsExtractor
@@ -450,3 +451,52 @@ class TestSiteAttributeExtractor(TestCase):
 
         with self.assertRaises(NoValueExtracted):
             extractor.extract_value(resource_info)
+
+
+class TestHeaderMappingExtractor(TestCase):
+
+    def test_maps_header_to_value(self):
+        mapping = {'text/html': 'HTML', 'image/png': 'IMAGE'}
+        extractor = HeaderMappingExtractor('content-type', mapping)
+
+        resource_info = ResourceInfo(headers={'content-type': 'text/html'})
+        self.assertEquals('HTML', extractor.extract_value(resource_info))
+
+        resource_info = ResourceInfo(headers={'content-type': 'image/png'})
+        self.assertEquals('IMAGE', extractor.extract_value(resource_info))
+
+    def test_uses_default_if_header_not_found(self):
+        extractor = HeaderMappingExtractor(
+            'content-type', {}, default='DEFAULT')
+        resource_info = ResourceInfo(headers={})
+
+        self.assertEquals('DEFAULT', extractor.extract_value(resource_info))
+
+    def test_uses_default_if_header_not_mapped(self):
+        extractor = HeaderMappingExtractor(
+            'pragma', {}, default='DEFAULT')
+        resource_info = ResourceInfo(headers={'pragma': 'no-cache'})
+
+        self.assertEquals('DEFAULT', extractor.extract_value(resource_info))
+
+    def test_raises_if_no_default_and_header_not_found(self):
+        extractor = HeaderMappingExtractor('content-type', {})
+        resource_info = ResourceInfo(headers={})
+
+        with self.assertRaises(NoValueExtracted):
+            extractor.extract_value(resource_info)
+
+    def test_raises_if_no_default_and_header_not_mapped(self):
+        extractor = HeaderMappingExtractor('content-type', {})
+        resource_info = ResourceInfo(headers={'content-type': 'text/html'})
+
+        with self.assertRaises(NoValueExtracted):
+            extractor.extract_value(resource_info)
+
+    def test_deals_with_charset_in_content_type_header(self):
+        mapping = {'text/html': 'HTML'}
+        extractor = HeaderMappingExtractor('content-type', mapping)
+        resource_info = ResourceInfo(
+            headers={'content-type': 'text/html; charset=utf-8'})
+
+        self.assertEquals('HTML', extractor.extract_value(resource_info))

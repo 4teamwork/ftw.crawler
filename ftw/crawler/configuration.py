@@ -1,3 +1,4 @@
+from ftw.crawler.exceptions import NoSuchField
 import imp
 import os
 
@@ -26,6 +27,12 @@ class Config(object):
 
         for field in self.fields:
             field.bind(self)
+
+    def get_field(self, field_name):
+        for field in self.fields:
+            if field.name == field_name:
+                return field
+        raise NoSuchField(field_name)
 
 
 class Site(object):

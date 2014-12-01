@@ -1,16 +1,19 @@
 from argparse import Namespace
 from copy import deepcopy
 from datetime import datetime
+from ftw.crawler.configuration import Config
 from ftw.crawler.configuration import Field
 from ftw.crawler.configuration import get_config
 from ftw.crawler.configuration import Site
 from ftw.crawler.exceptions import ExtractionError
+from ftw.crawler.exceptions import NoSuchField
 from ftw.crawler.exceptions import NoValueExtracted
 from ftw.crawler.extractors import ConstantExtractor
 from ftw.crawler.extractors import CreatorExtractor
 from ftw.crawler.extractors import DescriptionExtractor
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.extractors import Extractor
+from ftw.crawler.extractors import FieldMappingExtractor
 from ftw.crawler.extractors import HeaderMappingExtractor
 from ftw.crawler.extractors import HTTPHeaderExtractor
 from ftw.crawler.extractors import IndexingTimeExtractor
@@ -500,3 +503,82 @@ class TestHeaderMappingExtractor(TestCase):
             headers={'content-type': 'text/html; charset=utf-8'})
 
         self.assertEquals('HTML', extractor.extract_value(resource_info))
+
+
+class TestFieldMappingExtractor(TestCase):
+
+    def setUp(self):
+        # TODO: Refactor this testcase
+        site = Site('http://example.org')
+        self.resource_info = ResourceInfo()
+        self.mapping = {'travel': 'TRAVEL', 'music': 'MUSIC'}
+
+        subcategory = Field(
+            'subcategory',
+            extractor=ConstantExtractor('travel'))
+
+        category = Field(
+            'category',
+            extractor=FieldMappingExtractor('subcategory', self.mapping))
+
+        self.config = Config(
+            sites=[site],
+            tika=None,
+            solr=None,
+            unique_field=None,
+            url_field=None,
+            last_modified_field=None,
+
+            fields=[category, subcategory],)
+
+    def test_maps_field_to_value(self):
+        extractor = self.config.get_field('category').extractor
+        self.assertEquals(
+            'TRAVEL', extractor.extract_value(self.resource_info))
+
+    def test_raises_if_field_not_found(self):
+        category = self.config.get_field('category')
+        category.extractor = FieldMappingExtractor(
+            'missing_field', self.mapping)
+        category.extractor.bind(category)
+
+        with self.assertRaises(NoSuchField):
+            category.extractor.extract_value(self.resource_info)
+
+    def test_uses_default_if_field_returns_none(self):
+        category = self.config.get_field('category')
+        category.extractor.default = 'DEFAULT'
+        subcategory = self.config.get_field('subcategory')
+        subcategory.extractor = ConstantExtractor(None)
+        subcategory.extractor.bind(subcategory)
+
+        self.assertEquals(
+            'DEFAULT', category.extractor.extract_value(self.resource_info))
+
+    def test_raises_if_no_default_and_field_doesnt_return_value(self):
+        category = self.config.get_field('category')
+        subcategory = self.config.get_field('subcategory')
+        subcategory.extractor = ConstantExtractor(None)
+        subcategory.extractor.bind(subcategory)
+
+        with self.assertRaises(NoValueExtracted):
+            category.extractor.extract_value(self.resource_info)
+
+    def test_uses_default_if_field_value_not_mapped(self):
+        category = self.config.get_field('category')
+        category.extractor.default = 'DEFAULT'
+        subcategory = self.config.get_field('subcategory')
+        subcategory.extractor = ConstantExtractor('physics')
+        subcategory.extractor.bind(subcategory)
+
+        self.assertEquals(
+            'DEFAULT', category.extractor.extract_value(self.resource_info))
+
+    def test_raises_if_no_default_and_field_value_not_mapped(self):
+        category = self.config.get_field('category')
+        subcategory = self.config.get_field('subcategory')
+        subcategory.extractor = ConstantExtractor('physics')
+        subcategory.extractor.bind(subcategory)
+
+        with self.assertRaises(NoValueExtracted):
+            category.extractor.extract_value(self.resource_info)

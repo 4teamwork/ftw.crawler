@@ -5,6 +5,7 @@ from ftw.crawler.configuration import Site
 from ftw.crawler.extractors import ConstantExtractor
 from ftw.crawler.extractors import CreatorExtractor
 from ftw.crawler.extractors import DescriptionExtractor
+from ftw.crawler.extractors import FieldMappingExtractor
 from ftw.crawler.extractors import HeaderMappingExtractor
 from ftw.crawler.extractors import IndexingTimeExtractor
 from ftw.crawler.extractors import KeywordsExtractor
@@ -21,6 +22,11 @@ from ftw.crawler.extractors import URLExtractor
 PORTAL_TYPE_MAPPING = {
     'text/html': 'ContentPage',
     'application/pdf': 'File',
+}
+
+OBJECT_TYPE_MAPPING = {
+    'ContentPage': 'CONTENT_PAGE',
+    'File': 'FILE',
 }
 
 CONFIG = Config(
@@ -65,6 +71,9 @@ CONFIG = Config(
         Field('modified',
               extractor=LastModifiedExtractor(),
               type_=datetime),
+        Field('object_type',
+              extractor=FieldMappingExtractor(
+                  'portal_type', OBJECT_TYPE_MAPPING, default='File')),
         Field('path_string',
               extractor=URLExtractor()),
         Field('portal_type',

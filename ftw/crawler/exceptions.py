@@ -21,3 +21,8 @@ class NoValueExtracted(ExtractionError):
 class SolrError(FtwCrawlerException):
     """Solr returned a non-200 response for an operation.
     """
+
+
+class NoSuchField(FtwCrawlerException):
+    """A field that doesn't exist was specified by name.
+    """

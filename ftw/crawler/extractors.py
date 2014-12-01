@@ -304,3 +304,30 @@ class HeaderMappingExtractor(HTTPHeaderExtractor):
         else:
             # Header present but not mapped
             return self._default_or_raise()
+
+
+class FieldMappingExtractor(HTTPHeaderExtractor):
+
+    def __init__(self, field_name, mapping, default=None):
+        self.field_name = field_name
+        self.mapping = mapping
+        self.default = default
+
+    def _default_or_raise(self):
+        if self.default is not None:
+            return self.default
+        else:
+            raise NoValueExtracted
+
+    def extract_value(self, resource_info):
+        mapped_field = self.field.config.get_field(self.field_name)
+        field_value = mapped_field.extractor.extract_value(resource_info)
+        if field_value is None:
+            # Field not extracted
+            return self._default_or_raise()
+
+        if field_value in self.mapping:
+            return self.mapping[field_value]
+        else:
+            # Field present but not mapped
+            return self._default_or_raise()

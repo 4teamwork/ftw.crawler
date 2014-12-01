@@ -3,6 +3,7 @@ from ftw.crawler.configuration import Config
 from ftw.crawler.configuration import Field
 from ftw.crawler.configuration import get_config
 from ftw.crawler.configuration import Site
+from ftw.crawler.exceptions import NoSuchField
 from ftw.crawler.extractors import Extractor
 from pkg_resources import resource_filename
 from unittest2 import TestCase
@@ -53,6 +54,14 @@ class TestConfig(TestCase):
 
     def test_binds_sites_to_self(self):
         self.assertEquals(self.site.config, self.config)
+
+    def test_get_field_retrieves_field_by_name(self):
+        field = self.config.get_field('foo')
+        self.assertEquals(field, self.field)
+
+    def test_get_field_raises_if_field_not_found(self):
+        with self.assertRaises(NoSuchField):
+            self.config.get_field('doesnt_exist')
 
 
 class TestSite(TestCase):

@@ -1,5 +1,7 @@
 from ftw.crawler.exceptions import AttemptedRedirect
 from ftw.crawler.exceptions import FetchingError
+from ftw.crawler.exceptions import NotModified
+from ftw.crawler.utils import from_iso_datetime
 from ftw.crawler.utils import get_content_type
 import logging
 import tempfile
@@ -12,18 +14,43 @@ class ResourceFetcher(object):
 
     def __init__(self, resource_info, session, tempdir):
         self.resource_info = resource_info
+        self.url_info = resource_info.url_info
         self.session = session
         self.tempdir = tempdir
 
     def _mktmp(self):
         return tempfile.NamedTemporaryFile(dir=self.tempdir, delete=False)
 
+    def is_modified(self):
+        if self.resource_info.last_indexed is None:
+            return True
+
+        if 'lastmod' in self.url_info:
+            last_modified = self.url_info['lastmod']
+            last_modified = from_iso_datetime(last_modified)
+            return last_modified > self.resource_info.last_indexed
+
+        # No 'lastmod' in urlinfo - fall back to a HEAD request
+        response = self.session.head(self.url_info['loc'])
+        if 'last-modified' in response.headers:
+            # TODO: Use 'closing' context manager in order to avoid
+            # blocking connection pool
+            last_modified = response.headers['last-modified']
+            last_modified = from_iso_datetime(last_modified)
+            return last_modified > self.resource_info.last_indexed
+        return True
+
     def fetch(self):
         resource_info = self.resource_info
-        url = resource_info.url_info['loc']
+        url = self.url_info['loc']
+
+        modified = self.is_modified()
+        if not modified:
+            log.debug("Resource {} hasn't been modified since it last got "
+                      "indexed, skipping.".format(url))
+            raise NotModified
 
         response = self.session.get(url, allow_redirects=False)
-
         if response.is_redirect:
             # TODO: With redirects it's unclear which URL to use as the
             # canonical URL - so we don't allow them for now.

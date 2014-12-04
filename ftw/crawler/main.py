@@ -1,6 +1,7 @@
 from ftw.crawler import parse_args
 from ftw.crawler.configuration import get_config
 from ftw.crawler.exceptions import AttemptedRedirect
+from ftw.crawler.exceptions import NotModified
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.fetcher import ResourceFetcher
 from ftw.crawler.gatherer import URLGatherer
@@ -10,6 +11,7 @@ from ftw.crawler.sitemap import SitemapParser
 from ftw.crawler.solr import solr_escape
 from ftw.crawler.solr import SolrConnector
 from ftw.crawler.tika import TikaConverter
+from ftw.crawler.utils import from_iso_datetime
 import logging
 import os
 import requests
@@ -45,6 +47,14 @@ def get_indexed_docs(config, solr, site):
     return indexed_docs
 
 
+def get_indexing_time(url, indexed_docs, config):
+    for doc in indexed_docs:
+        if doc[config.url_field] == url:
+            isodate = doc[config.last_modified_field]
+            return from_iso_datetime(isodate)
+    return None
+
+
 def crawl_and_index(tempdir, config):
     solr = SolrConnector(config.solr)
 
@@ -63,15 +73,20 @@ def crawl_and_index(tempdir, config):
 
         log.info("URLs for {}:".format(sitemap.site.url))
         for url_info in sitemap.url_infos:
-            log.info("{} {}".format(url_info['loc'], str(url_info)))
+            url = url_info['loc']
+            log.info("{} {}".format(url, str(url_info)))
+
+            # Get time this document was last indexed
+            last_indexed = get_indexing_time(url, indexed_docs, config)
 
             # Fetch and save resource
-            resource_info = ResourceInfo(site=sitemap.site, url_info=url_info)
+            resource_info = ResourceInfo(site=sitemap.site,
+                                         url_info=url_info,
+                                         last_indexed=last_indexed)
             fetcher = ResourceFetcher(resource_info, fetcher_session, tempdir)
-
             try:
                 resource_info = fetcher.fetch()
-            except AttemptedRedirect:
+            except (AttemptedRedirect, NotModified):
                 continue
 
             # Extract metadata and plain text
@@ -82,7 +97,7 @@ def crawl_and_index(tempdir, config):
             os.unlink(resource_info.filename)
 
             # Index into Solr
-            log.info("Indexing {} into solr.".format(url_info['loc']))
+            log.info("Indexing {} into solr.".format(url))
             solr.index(field_values)
 
             print

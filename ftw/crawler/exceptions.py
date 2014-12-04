@@ -31,3 +31,8 @@ class NoSuchField(FtwCrawlerException):
 class AttemptedRedirect(FtwCrawlerException):
     """An URL attempted a redirect to another location.
     """
+
+
+class NotModified(FtwCrawlerException):
+    """A resource hasn't been modified since the last time it got indexed.
+    """

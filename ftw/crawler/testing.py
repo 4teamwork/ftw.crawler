@@ -1,3 +1,5 @@
+from ftw.crawler.fetcher import ResourceFetcher
+from ftw.crawler.resource import ResourceInfo
 from ftw.crawler.sitemap import SitemapParser
 from ftw.crawler.tests.helpers import get_asset
 from ftw.crawler.tests.helpers import MockResponse
@@ -5,6 +7,7 @@ from lxml import etree
 from unittest2 import TestCase
 import calendar
 import json
+import requests
 
 
 def timestamp(dt):
@@ -40,6 +43,19 @@ class DatetimeTestCase(TestCase):
             expected, actual, delta)
         return self.assertAlmostEqual(expected_ts, actual_ts,
                                       delta=delta, msg=msg)
+
+
+class FetcherTestCase(TestCase):
+
+    def _create_fetcher(self, resource_info=None, session=None, tempdir=None):
+        if resource_info is None:
+            resource_info = ResourceInfo()
+
+        if session is None:
+            session = requests.Session()
+
+        return ResourceFetcher(
+            resource_info=resource_info, session=session, tempdir=tempdir)
 
 
 SITEMAP = get_asset('sitemap.xml')

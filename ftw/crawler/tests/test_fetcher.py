@@ -1,32 +1,25 @@
+from datetime import datetime
 from ftw.crawler.exceptions import AttemptedRedirect
 from ftw.crawler.exceptions import FetchingError
-from ftw.crawler.fetcher import ResourceFetcher
+from ftw.crawler.exceptions import NotModified
 from ftw.crawler.resource import ResourceInfo
+from ftw.crawler.testing import FetcherTestCase
 from ftw.crawler.tests.helpers import MockResponse
+from ftw.crawler.utils import to_http_datetime
+from ftw.crawler.utils import to_iso_datetime
+from ftw.crawler.utils import to_utc
 from mock import patch
-from unittest2 import TestCase
-import requests
 import shutil
 import tempfile
 
 
-class TestResourceFetcher(TestCase):
+class TestResourceFetcher(FetcherTestCase):
 
     def setUp(self):
         self.tempdir = tempfile.mkdtemp(prefix='ftw.crawler.tests_')
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
-
-    def _create_fetcher(self, resource_info=None, session=None, tempdir=None):
-        if resource_info is None:
-            resource_info = ResourceInfo()
-
-        if session is None:
-            session = requests.Session()
-
-        return ResourceFetcher(
-            resource_info=resource_info, session=session, tempdir=tempdir)
 
     @patch('requests.sessions.Session.get')
     def test_fetches_and_saves_resource(self, request):
@@ -81,3 +74,101 @@ class TestResourceFetcher(TestCase):
         resource_info = fetcher.fetch()
 
         self.assertEquals('text/html', resource_info.content_type)
+
+
+class TestFetcherIsModifiedLogic(FetcherTestCase):
+
+    def _create_resource_info(self):
+        return ResourceInfo(
+            url_info={'loc': 'http://example.org/'},
+            last_indexed=None)
+
+    def test_unknown_last_indexed_time_always_yields_modified(self):
+        fetcher = self._create_fetcher(self._create_resource_info())
+        self.assertTrue(
+            fetcher.is_modified(),
+            "Unknown last_indexed time should result in resource being "
+            "considered MODIFIED")
+
+    def test_is_modified_tests_against_urlinfo_lastmod(self):
+        resource_info = self._create_resource_info()
+        fetcher = self._create_fetcher(resource_info)
+        resource_info.last_indexed = to_utc(datetime(2014, 1, 1, 15, 30))
+
+        server_modified = to_utc(datetime(2014, 1, 1, 15, 30))
+        resource_info.url_info['lastmod'] = to_iso_datetime(server_modified)
+
+        self.assertFalse(
+            fetcher.is_modified(),
+            "Equal modification dates should lead to resource being "
+            "considered UNMODIFIED")
+
+        server_modified = to_utc(datetime(2014, 1, 1, 15, 31))
+        resource_info.url_info['lastmod'] = to_iso_datetime(server_modified)
+
+        self.assertTrue(
+            fetcher.is_modified(),
+            "Newer server modification date should lead to resource being "
+            "considered MODIFIED")
+
+        server_modified = to_utc(datetime(2014, 1, 1, 15, 29))
+        resource_info.url_info['lastmod'] = to_iso_datetime(server_modified)
+
+        self.assertFalse(
+            fetcher.is_modified(),
+            "Older server modification date should lead to resource being "
+            "considered UNMODIFIED")
+
+    @patch('requests.sessions.Session.head')
+    def test_is_modified_tests_against_http_last_modified(self, request):
+        resource_info = self._create_resource_info()
+        fetcher = self._create_fetcher(resource_info)
+        resource_info.last_indexed = to_utc(datetime(2014, 1, 1, 15, 30))
+
+        server_modified = to_utc(datetime(2014, 1, 1, 15, 30))
+        request.return_value = MockResponse(
+            headers={'last-modified': to_http_datetime(server_modified)})
+
+        self.assertFalse(
+            fetcher.is_modified(),
+            "Equal modification dates should lead to resource being "
+            "considered UNMODIFIED")
+
+        server_modified = to_utc(datetime(2014, 1, 1, 15, 31))
+        request.return_value = MockResponse(
+            headers={'last-modified': to_http_datetime(server_modified)})
+
+        self.assertTrue(
+            fetcher.is_modified(),
+            "Newer server modification date should lead to resource being "
+            "considered MODIFIED")
+
+        server_modified = to_utc(datetime(2014, 1, 1, 15, 29))
+        request.return_value = MockResponse(
+            headers={'last-modified': to_http_datetime(server_modified)})
+
+        self.assertFalse(
+            fetcher.is_modified(),
+            "Older server modification date should lead to resource being "
+            "considered UNMODIFIED")
+
+    @patch('requests.sessions.Session.head')
+    def test_is_modified_defaults_to_true(self, request):
+        resource_info = self._create_resource_info()
+        fetcher = self._create_fetcher(resource_info)
+        resource_info.last_indexed = to_utc(datetime(2014, 1, 1, 15, 30))
+
+        self.assertTrue(
+            fetcher.is_modified(),
+            "is_modified() should default to True if last_indexed date "
+            "is present, but no server modification date could be determined")
+
+    @patch('ftw.crawler.fetcher.ResourceFetcher.is_modified')
+    @patch('requests.sessions.Session.get')
+    def test_fetcher_doesnt_fetch_if_not_modified(self, request, is_modified):
+        is_modified.return_value = False
+        resource_info = self._create_resource_info()
+        fetcher = self._create_fetcher(resource_info)
+        with self.assertRaises(NotModified):
+            fetcher.fetch()
+        self.assertEquals(0, request.call_count)

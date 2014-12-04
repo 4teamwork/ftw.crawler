@@ -55,10 +55,14 @@ def get_indexing_time(url, indexed_docs, config):
     return None
 
 
-def crawl_and_index(tempdir, config):
+def crawl_and_index(tempdir, config, options):
     solr = SolrConnector(config.solr)
 
     for site in config.sites:
+        # Skip non-matching sites if we're only indexing a specific URL
+        if options.url and not options.url.startswith(site.url):
+            continue
+
         # Fetch and parse the sitemap
         sitemap = get_sitemap(site)
 
@@ -71,9 +75,14 @@ def crawl_and_index(tempdir, config):
         # Create a requests session to allow for connection pooling
         fetcher_session = requests.Session()
 
-        log.info("URLs for {}:".format(sitemap.site.url))
+        log.info("Crawling {}...".format(sitemap.site.url))
         for url_info in sitemap.url_infos:
             url = url_info['loc']
+
+            # If we're only indexing a specific URL, skip all others
+            if options.url and not url == options.url:
+                continue
+
             log.info("{} {}".format(url, str(url_info)))
 
             # Get time this document was last indexed
@@ -105,13 +114,13 @@ def crawl_and_index(tempdir, config):
 
 
 def main():
-    args = parse_args()
-    config = get_config(args)
+    options = parse_args()
+    config = get_config(options)
 
     tempdir = tempfile.mkdtemp(prefix='ftw.crawler_')
     log.debug("Using temporary directory {}".format(tempdir))
     try:
-        crawl_and_index(tempdir, config)
+        crawl_and_index(tempdir, config, options)
     finally:
         shutil.rmtree(tempdir)
 

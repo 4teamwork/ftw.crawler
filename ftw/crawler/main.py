@@ -6,6 +6,7 @@ from ftw.crawler.gatherer import URLGatherer
 from ftw.crawler.purging import purge_removed_docs_from_index
 from ftw.crawler.resource import ResourceInfo
 from ftw.crawler.sitemap import SitemapParser
+from ftw.crawler.solr import solr_escape
 from ftw.crawler.solr import SolrConnector
 from ftw.crawler.tika import TikaConverter
 import logging
@@ -27,30 +28,36 @@ def print_fields(field_values):
     print
 
 
-def fetch_sitemaps(sites):
-    sitemaps = []
-    for site in sites:
-        gatherer = URLGatherer(site.url)
-        sitemap_xml = gatherer.fetch_sitemap()
-        sitemap = SitemapParser(sitemap_xml, site=site)
-        sitemaps.append(sitemap)
-    return sitemaps
+def get_sitemap(site):
+    gatherer = URLGatherer(site.url)
+    sitemap_xml = gatherer.fetch_sitemap()
+    sitemap = SitemapParser(sitemap_xml, site=site)
+    return sitemap
+
+
+def get_indexed_docs(config, solr, site):
+    query = '{}:{}*'.format(config.url_field, solr_escape(site.url))
+    indexed_docs = solr.search(
+        query,
+        fl=(config.unique_field, config.url_field, config.last_modified_field))
+    return indexed_docs
 
 
 def crawl_and_index(tempdir, config):
     solr = SolrConnector(config.solr)
 
-    # Fetch all sitemaps
-    sitemaps = fetch_sitemaps(config.sites)
+    for site in config.sites:
+        # Fetch and parse the sitemap
+        sitemap = get_sitemap(site)
 
-    # Purge docs that have been removed from sitemap from Solr index
-    purge_removed_docs_from_index(config, solr, sitemaps)
+        # Get all docs indexed in Solr for a particular site
+        indexed_docs = get_indexed_docs(config, solr, sitemap.site)
 
-    for sitemap in sitemaps:
-        url_infos = sitemap.url_infos
+        # Purge docs that have been removed from sitemap from Solr index
+        purge_removed_docs_from_index(config, sitemap, indexed_docs)
 
         log.info("URLs for {}:".format(sitemap.site.url))
-        for url_info in url_infos:
+        for url_info in sitemap.url_infos:
             log.info("{} {}".format(url_info['loc'], str(url_info)))
 
             # Fetch and save resource

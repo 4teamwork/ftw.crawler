@@ -14,7 +14,7 @@ def purge_removed_docs_from_index(config, solr, sitemaps):
         docs_to_purge = []
         site = sitemap.site
         query = '{}:{}*'.format(url_field, solr_escape(site.url))
-        indexed_docs = solr.search(query)
+        indexed_docs = solr.search(query, fl=(unique_field, url_field))
         for doc in indexed_docs:
             url = doc[url_field]
             uid = doc[unique_field]

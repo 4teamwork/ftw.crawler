@@ -53,6 +53,10 @@ class SolrConnector(object):
         headers = {'Content-Type': 'application/json'}
 
         params = {'q': query, 'wt': 'json'}
+
+        if fl is not None:
+            params.update({'fl': ','.join(fl)})
+
         response = requests.get(
             self.search_url, params=params, headers=headers)
 
@@ -73,7 +77,7 @@ class SolrConnector(object):
         return response
 
     def search(self, query, fl=None):
-        response = self._search_request(query)
+        response = self._search_request(query, fl)
         search_results = response.json()['response']
         docs = search_results['docs']
         return docs

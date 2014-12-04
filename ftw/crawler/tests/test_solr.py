@@ -115,6 +115,15 @@ class TestSolrConnector(SolrTestCase):
             solr.search('Title:Foo')
             self.assertTrue(log.error.called)
 
+    @patch('requests.get')
+    def test_search_honors_fl_argument(self, request):
+        request.return_value = self.response_search_results
+        solr = SolrConnector('http://localhost:8983/solr')
+
+        solr.search('Title:Foo', fl=('Title', 'UID'))
+        args, kwargs = request.call_args
+        self.assertIn(('fl', 'Title,UID'), kwargs['params'].items())
+
 
 class TestSolrEscape(TestCase):
 

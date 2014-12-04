@@ -1,3 +1,4 @@
+from ftw.crawler.exceptions import AttemptedRedirect
 from ftw.crawler.exceptions import FetchingError
 from ftw.crawler.fetcher import ResourceFetcher
 from ftw.crawler.resource import ResourceInfo
@@ -59,6 +60,15 @@ class TestResourceFetcher(TestCase):
         resource_info = ResourceInfo(url_info={'loc': 'http://example.org/'})
         fetcher = self._create_fetcher(resource_info)
         with self.assertRaises(FetchingError):
+            fetcher.fetch()
+
+    @patch('requests.sessions.Session.get')
+    def test_raises_if_redirect(self, request):
+        request.return_value = MockResponse(status_code=301, is_redirect=True)
+
+        resource_info = ResourceInfo(url_info={'loc': 'http://example.org/'})
+        fetcher = self._create_fetcher(resource_info)
+        with self.assertRaises(AttemptedRedirect):
             fetcher.fetch()
 
     @patch('requests.sessions.Session.get')

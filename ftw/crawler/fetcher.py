@@ -1,6 +1,11 @@
+from ftw.crawler.exceptions import AttemptedRedirect
 from ftw.crawler.exceptions import FetchingError
 from ftw.crawler.utils import get_content_type
+import logging
 import tempfile
+
+
+log = logging.getLogger(__name__)
 
 
 class ResourceFetcher(object):
@@ -17,7 +22,14 @@ class ResourceFetcher(object):
         resource_info = self.resource_info
         url = resource_info.url_info['loc']
 
-        response = self.session.get(url)
+        response = self.session.get(url, allow_redirects=False)
+
+        if response.is_redirect:
+            # TODO: With redirects it's unclear which URL to use as the
+            # canonical URL - so we don't allow them for now.
+            log.warn("URL {} attempted a redirect - skipped.".format(url))
+            raise AttemptedRedirect(url)
+
         if not response.status_code == 200:
             raise FetchingError("Could not fetch {}. Got status {}".format(
                 url, response.status_code))
@@ -32,4 +44,5 @@ class ResourceFetcher(object):
         resource_info.headers = response.headers
         resource_info.filename = resource_file.name
 
+        log.info("Resource saved to {}".format(resource_info.filename))
         return resource_info

@@ -1,5 +1,6 @@
 from ftw.crawler import parse_args
 from ftw.crawler.configuration import get_config
+from ftw.crawler.exceptions import AttemptedRedirect
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.fetcher import ResourceFetcher
 from ftw.crawler.gatherer import URLGatherer
@@ -67,8 +68,11 @@ def crawl_and_index(tempdir, config):
             # Fetch and save resource
             resource_info = ResourceInfo(site=sitemap.site, url_info=url_info)
             fetcher = ResourceFetcher(resource_info, fetcher_session, tempdir)
-            resource_info = fetcher.fetch()
-            log.info("Resource saved to {}".format(resource_info.filename))
+
+            try:
+                resource_info = fetcher.fetch()
+            except AttemptedRedirect:
+                continue
 
             # Extract metadata and plain text
             engine = ExtractionEngine(

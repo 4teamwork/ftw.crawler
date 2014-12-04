@@ -26,3 +26,8 @@ class SolrError(FtwCrawlerException):
 class NoSuchField(FtwCrawlerException):
     """A field that doesn't exist was specified by name.
     """
+
+
+class AttemptedRedirect(FtwCrawlerException):
+    """An URL attempted a redirect to another location.
+    """

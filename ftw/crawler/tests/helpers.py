@@ -15,7 +15,7 @@ class MockRequest(object):
 class MockResponse(object):
 
     def __init__(self, content=None, status_code=200, headers=None,
-                 request=None):
+                 request=None, is_redirect=False):
         self.content = content
         self.status_code = status_code
 
@@ -26,6 +26,8 @@ class MockResponse(object):
         if request is None:
             request = MockRequest()
         self.request = request
+
+        self.is_redirect = is_redirect
 
     def json(self):
         return json.loads(self.content)

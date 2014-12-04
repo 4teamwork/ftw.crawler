@@ -224,7 +224,6 @@ class LastModifiedExtractor(URLInfoExtractor, HTTPHeaderExtractor):
     def extract_value(self, resource_info):
         if 'lastmod' in resource_info.url_info:
             datestring = resource_info.url_info['lastmod']
-            print datestring
             utc_dt = from_iso_datetime(datestring)
             return utc_dt
 

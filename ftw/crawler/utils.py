@@ -1,3 +1,5 @@
+from wsgiref.handlers import format_date_time
+import calendar
 import datetime
 import dateutil.parser
 import json
@@ -25,6 +27,23 @@ def to_iso_datetime(dt):
 
 def from_iso_datetime(datestring):
     """Parse an ISO 8601 datetime and create a TZ aware datetime object in UTC.
+    """
+    dt = dateutil.parser.parse(datestring)
+    return to_utc(dt)
+
+
+def to_http_datetime(dt):
+    """Create a valid, time zone aware RFC 2616 HTTP datetime string in GMT.
+    """
+    dt = to_utc(dt)
+    # Use calendar.timegm(), NOT time.mktime(), which assumes *local time*
+    timestamp = calendar.timegm(dt.timetuple())
+    return format_date_time(timestamp)
+
+
+def from_http_datetime(datestring):
+    """Parse an RFC 2616 HTTP datetime string and create a TZ aware datetime
+    object in UTC.
     """
     dt = dateutil.parser.parse(datestring)
     return to_utc(dt)

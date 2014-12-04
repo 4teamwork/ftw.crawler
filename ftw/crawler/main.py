@@ -11,6 +11,7 @@ from ftw.crawler.solr import SolrConnector
 from ftw.crawler.tika import TikaConverter
 import logging
 import os
+import requests
 import shutil
 import tempfile
 
@@ -56,13 +57,16 @@ def crawl_and_index(tempdir, config):
         # Purge docs that have been removed from sitemap from Solr index
         purge_removed_docs_from_index(config, sitemap, indexed_docs)
 
+        # Create a requests session to allow for connection pooling
+        fetcher_session = requests.Session()
+
         log.info("URLs for {}:".format(sitemap.site.url))
         for url_info in sitemap.url_infos:
             log.info("{} {}".format(url_info['loc'], str(url_info)))
 
             # Fetch and save resource
             resource_info = ResourceInfo(site=sitemap.site, url_info=url_info)
-            fetcher = ResourceFetcher(resource_info, tempdir)
+            fetcher = ResourceFetcher(resource_info, fetcher_session, tempdir)
             resource_info = fetcher.fetch()
             log.info("Resource saved to {}".format(resource_info.filename))
 

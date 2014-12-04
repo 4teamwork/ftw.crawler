@@ -37,6 +37,9 @@ CONFIG = Config(
         Site('https://www.dropbox.com/',
              attributes={'site_area': 'Dropbox'}),
 
+        Site('http://mailchimp.com',
+             attributes={'site_area': 'MailChimp'}),
+
         Site('http://zg.clex.ch',
              attributes={'site_area': 'Gesetzessammlung'}),
     ],

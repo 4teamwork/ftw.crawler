@@ -17,6 +17,7 @@ import os
 import requests
 import shutil
 import tempfile
+from ftw.crawler.exceptions import FetchingError
 
 
 log = logging.getLogger(__name__)
@@ -96,6 +97,9 @@ def crawl_and_index(tempdir, config, options):
             try:
                 resource_info = fetcher.fetch()
             except (AttemptedRedirect, NotModified):
+                continue
+            except FetchingError, e:
+                log.error(str(e))
                 continue
 
             # Extract metadata and plain text

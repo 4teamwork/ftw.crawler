@@ -4,7 +4,7 @@ import io
 
 
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
-PROPERTIES = ('loc', 'lastmod', 'changefreq', 'priority')
+PROPERTIES = ('loc', 'lastmod', 'changefreq', 'priority', 'target')
 
 
 class SitemapParser(object):

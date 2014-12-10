@@ -24,6 +24,7 @@ from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import SiteAttributeExtractor
 from ftw.crawler.extractors import SlugExtractor
 from ftw.crawler.extractors import SnippetTextExtractor
+from ftw.crawler.extractors import TargetURLExtractor
 from ftw.crawler.extractors import TextExtractor
 from ftw.crawler.extractors import TitleExtractor
 from ftw.crawler.extractors import UIDExtractor
@@ -416,6 +417,24 @@ class TestURLExtractor(TestCase):
 
     def test_extracts_url_from_urlinfo(self):
         extractor = URLExtractor()
+        resource_info = ResourceInfo(url_info={'loc': 'http://example.org'})
+        self.assertEquals('http://example.org',
+                          extractor.extract_value(resource_info))
+
+
+class TestTargetURLExtractor(TestCase):
+
+    def test_extracts_target_url_from_urlinfo(self):
+        extractor = TargetURLExtractor()
+        resource_info = ResourceInfo(url_info={
+            'loc': 'http://example.org',
+            'target': 'http://example.org/target',
+        })
+        self.assertEquals('http://example.org/target',
+                          extractor.extract_value(resource_info))
+
+    def test_defaults_to_loc_if_no_target_given(self):
+        extractor = TargetURLExtractor()
         resource_info = ResourceInfo(url_info={'loc': 'http://example.org'})
         self.assertEquals('http://example.org',
                           extractor.extract_value(resource_info))

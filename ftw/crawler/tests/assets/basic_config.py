@@ -14,6 +14,7 @@ from ftw.crawler.extractors import PlainTextExtractor
 from ftw.crawler.extractors import SiteAttributeExtractor
 from ftw.crawler.extractors import SlugExtractor
 from ftw.crawler.extractors import SnippetTextExtractor
+from ftw.crawler.extractors import TargetURLExtractor
 from ftw.crawler.extractors import TitleExtractor
 from ftw.crawler.extractors import UIDExtractor
 from ftw.crawler.extractors import URLExtractor
@@ -47,7 +48,7 @@ CONFIG = Config(
     solr='http://localhost:8983/solr',
 
     unique_field='UID',
-    url_field='getRemoteUrl',
+    url_field='path_string',
     last_modified_field='modified',
 
     fields=[
@@ -70,7 +71,7 @@ CONFIG = Config(
         Field('getId',
               extractor=SlugExtractor()),
         Field('getRemoteUrl',
-              extractor=URLExtractor()),
+              extractor=TargetURLExtractor()),
         Field('modified',
               extractor=LastModifiedExtractor(),
               type_=datetime),

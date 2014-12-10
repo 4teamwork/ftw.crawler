@@ -8,6 +8,7 @@
   </url>
   <url>
     <loc>http://example.org/bar</loc>
+    <target>http://example.org/target-bar</target>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <lastmod>2005-01-01</lastmod>

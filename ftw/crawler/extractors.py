@@ -166,6 +166,15 @@ class URLExtractor(URLInfoExtractor):
         return resource_info.url_info.get('loc')
 
 
+class TargetURLExtractor(URLInfoExtractor):
+
+    def extract_value(self, resource_info):
+        if 'target' in resource_info.url_info:
+            return resource_info.url_info['target']
+        else:
+            return URLExtractor().extract_value(resource_info)
+
+
 class TitleExtractor(MetadataExtractor):
 
     def extract_value(self, resource_info):

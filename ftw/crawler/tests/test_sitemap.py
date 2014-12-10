@@ -18,6 +18,7 @@ class TestSitemapParser(TestCase):
              'lastmod': '2014-12-31',
              'priority': '1.0'},
             {'loc': 'http://example.org/bar',
+             'target': 'http://example.org/target-bar',
              'changefreq': 'daily',
              'lastmod': '2005-01-01',
              'priority': '1.0'}],

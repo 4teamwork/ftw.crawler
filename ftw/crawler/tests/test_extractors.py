@@ -240,14 +240,24 @@ class TestPlainTextExtractor(TestCase):
 
 class TestTitleExtractor(TestCase):
 
+    def test_extracts_title_from_x_document_title_http_header(self):
+        extractor = TitleExtractor()
+        resource_info = ResourceInfo(
+            metadata={'title': 'dont-use-this'},
+            headers={'X-Document-Title': 'QsOkcmVuZ3JhYmVuCg=='})
+        self.assertEquals('B\xc3\xa4rengraben',
+                          extractor.extract_value(resource_info))
+
     def test_extracts_title(self):
         extractor = TitleExtractor()
-        resource_info = ResourceInfo(metadata={'title': 'value'})
+        resource_info = ResourceInfo(metadata={'title': 'value'},
+                                     headers={})
         self.assertEquals('value', extractor.extract_value(resource_info))
 
     def test_raises_if_no_value_found(self):
         extractor = TitleExtractor()
-        resource_info = ResourceInfo(metadata={})
+        resource_info = ResourceInfo(metadata={},
+                                     headers={})
         with self.assertRaises(NoValueExtracted):
             extractor.extract_value(resource_info)
 
@@ -284,7 +294,8 @@ class TestSnippetTextExtractor(TestCase):
 
     def test_returns_plain_text_if_title_not_present(self):
         extractor = SnippetTextExtractor()
-        resource_info = ResourceInfo(metadata={}, text='Lorem Ipsum')
+        resource_info = ResourceInfo(metadata={}, text='Lorem Ipsum',
+                                     headers={})
         self.assertEquals(
             'Lorem Ipsum', extractor.extract_value(resource_info))
 
@@ -292,7 +303,8 @@ class TestSnippetTextExtractor(TestCase):
         extractor = SnippetTextExtractor()
         resource_info = ResourceInfo(
             metadata={'title': 'My Title'},
-            text='My Title\nLorem Ipsum')
+            text='My Title\nLorem Ipsum',
+            headers={})
         self.assertEquals(
             'Lorem Ipsum', extractor.extract_value(resource_info))
 

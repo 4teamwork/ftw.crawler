@@ -175,9 +175,13 @@ class TargetURLExtractor(URLInfoExtractor):
             return URLExtractor().extract_value(resource_info)
 
 
-class TitleExtractor(MetadataExtractor):
+class TitleExtractor(MetadataExtractor, HTTPHeaderExtractor):
 
     def extract_value(self, resource_info):
+        if 'X-Document-Title' in resource_info.headers:
+            header_value = resource_info.headers['X-Document-Title']
+            return header_value.decode('base64').strip()
+
         value = resource_info.metadata.get('title')
         if value is None:
             raise NoValueExtracted
@@ -202,7 +206,8 @@ class CreatorExtractor(MetadataExtractor):
         return value
 
 
-class SnippetTextExtractor(TextExtractor, MetadataExtractor):
+class SnippetTextExtractor(TextExtractor, MetadataExtractor,
+                           HTTPHeaderExtractor):
 
     def _get_title(self, resource_info):
         extractor = TitleExtractor()

@@ -3,24 +3,37 @@ import imp
 import os
 
 
-def get_config(args):
-    config_path = os.path.abspath(args.config)
-    module_name = os.path.splitext(os.path.basename(args.config))[0]
+def get_config(options):
+    config_path = os.path.abspath(options.config)
+    module_name = os.path.splitext(os.path.basename(options.config))[0]
     module = imp.load_source(module_name, config_path)
+    config = module.CONFIG
+
+    # Command line options for Tika and Solr override config values
+    if options.tika:
+        config.tika = options.tika
+    if options.solr:
+        config.solr = options.solr
+
+    if not (config.tika and config.solr):
+        raise ValueError(
+            'Tika and Solr URLs must be specified, either via command line '
+            'arguments or parameters in the configuration file.')
+
     return module.CONFIG
 
 
 class Config(object):
 
-    def __init__(self, sites, tika, solr, unique_field, url_field,
-                 last_modified_field, fields):
+    def __init__(self, sites, unique_field, url_field, last_modified_field,
+                 fields, tika=None, solr=None):
         self.sites = sites
-        self.tika = tika
-        self.solr = solr
         self.unique_field = unique_field
         self.url_field = url_field
         self.last_modified_field = last_modified_field
         self.fields = fields
+        self.tika = tika
+        self.solr = solr
 
         for site in self.sites:
             site.bind(self)

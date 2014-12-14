@@ -30,6 +30,12 @@ OBJECT_TYPE_MAPPING = {
     'File': 'FILE',
 }
 
+
+# May be overriden via command line arguments
+TIKA_URL = 'http://localhost:9998/'
+SOLR_URL = 'http://localhost:8983/solr'
+
+
 CONFIG = Config(
     sites=[
         Site('http://www.sitemapxml.co.uk/',
@@ -44,9 +50,6 @@ CONFIG = Config(
         Site('http://zg.clex.ch',
              attributes={'site_area': 'Gesetzessammlung'}),
     ],
-    tika='http://localhost:9998/',
-    solr='http://localhost:8983/solr',
-
     unique_field='UID',
     url_field='path_string',
     last_modified_field='modified',
@@ -104,5 +107,7 @@ CONFIG = Config(
         Field('UID',
               extractor=UIDExtractor(),
               required=True),
-    ]
+    ],
+    tika=TIKA_URL,
+    solr=SOLR_URL,
 )

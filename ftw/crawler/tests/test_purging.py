@@ -14,7 +14,7 @@ BASIC_CONFIG = resource_filename('ftw.crawler.tests.assets', 'basic_config.py')
 class TestPurging(SolrTestCase, SitemapTestCase):
 
     def setUp(self):
-        args = Namespace()
+        args = Namespace(tika=None, solr=None)
         args.config = BASIC_CONFIG
         self.config = deepcopy(get_config(args))
         self.config.url_field = 'url'

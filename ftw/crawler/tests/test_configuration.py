@@ -23,9 +23,9 @@ class TestConfig(TestCase):
         self.last_modified_field = 'modified'
         self.field = Field('foo', extractor=Extractor())
 
-        self.config = Config([self.site], self.tika, self.solr,
-                             self.unique_field, self.url_field,
-                             self.last_modified_field, [self.field])
+        self.config = Config([self.site], self.unique_field, self.url_field,
+                             self.last_modified_field, [self.field],
+                             self.tika, self.solr)
 
     def test_config_stores_sites(self):
         self.assertEquals([self.site], self.config.sites)
@@ -114,8 +114,16 @@ class TestField(TestCase):
 class TestGetConfig(TestCase):
 
     def test_get_config_loads_config_module_and_returns_config_instance(self):
-        args = Namespace()
-        args.config = BASIC_CONFIG
+        options = Namespace(tika=None, solr=None)
+        options.config = BASIC_CONFIG
 
-        config = get_config(args)
+        config = get_config(options)
         self.assertIsInstance(config, Config)
+
+    def test_get_config_sets_tika_and_solr_from_command_line(self):
+        options = Namespace(tika='http://tika', solr='http://solr')
+        options.config = BASIC_CONFIG
+
+        config = get_config(options)
+        self.assertEquals('http://tika', config.tika)
+        self.assertEquals('http://solr', config.solr)

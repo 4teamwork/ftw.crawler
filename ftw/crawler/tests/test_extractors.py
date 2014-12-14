@@ -249,18 +249,29 @@ class TestTitleExtractor(TestCase):
         self.assertEquals('B\xc3\xa4rengraben',
                           extractor.extract_value(resource_info))
 
-    def test_extracts_title(self):
+    def test_extracts_title_from_metadata(self):
         extractor = TitleExtractor()
         resource_info = ResourceInfo(metadata={'title': 'value'},
                                      headers={})
         self.assertEquals('value', extractor.extract_value(resource_info))
 
-    def test_raises_if_no_value_found(self):
+    def test_falls_back_to_filename(self):
         extractor = TitleExtractor()
-        resource_info = ResourceInfo(metadata={},
-                                     headers={})
-        with self.assertRaises(NoValueExtracted):
-            extractor.extract_value(resource_info)
+        resource_info = ResourceInfo(
+            metadata={},
+            headers={'content-disposition': 'attachment; '
+                     'filename="document.pdf"'})
+        self.assertEquals('document.pdf',
+                          extractor.extract_value(resource_info))
+
+    def test_falls_back_to_url_slug(self):
+        extractor = TitleExtractor()
+        resource_info = ResourceInfo(
+            metadata={},
+            headers={},
+            url_info={'loc': 'http://example.org/my____title'})
+        self.assertEquals('my-title',
+                          extractor.extract_value(resource_info))
 
 
 class TestDescriptionExtractor(TestCase):
@@ -295,8 +306,10 @@ class TestSnippetTextExtractor(TestCase):
 
     def test_returns_plain_text_if_title_not_present(self):
         extractor = SnippetTextExtractor()
-        resource_info = ResourceInfo(metadata={}, text='Lorem Ipsum',
-                                     headers={})
+        resource_info = ResourceInfo(
+            metadata={'title': 'Foo'},
+            text='Lorem Ipsum',
+            headers={})
         self.assertEquals(
             'Lorem Ipsum', extractor.extract_value(resource_info))
 

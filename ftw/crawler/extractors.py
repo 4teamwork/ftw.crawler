@@ -175,16 +175,26 @@ class TargetURLExtractor(URLInfoExtractor):
             return URLExtractor().extract_value(resource_info)
 
 
-class TitleExtractor(MetadataExtractor, HTTPHeaderExtractor):
+class TitleExtractor(MetadataExtractor, HTTPHeaderExtractor, URLInfoExtractor):
 
     def extract_value(self, resource_info):
+        # If present, X-Document-Title header takes precedence
         if 'X-Document-Title' in resource_info.headers:
             header_value = resource_info.headers['X-Document-Title']
             return header_value.decode('base64').strip()
 
+        # Next, attempt to get a title from Tika metadata
         value = resource_info.metadata.get('title')
+
         if value is None:
-            raise NoValueExtracted
+            try:
+                # Fall back to filename from Content-Disposition header
+                value = FilenameExtractor().extract_value(resource_info)
+            except NoValueExtracted:
+                # As a last resort, use a slug built from the rightmost part
+                # of the resource's URL
+                value = SlugExtractor().extract_value(resource_info)
+
         return value
 
 
@@ -211,10 +221,7 @@ class SnippetTextExtractor(TextExtractor, MetadataExtractor,
 
     def _get_title(self, resource_info):
         extractor = TitleExtractor()
-        try:
-            title = extractor.extract_value(resource_info)
-        except NoValueExtracted:
-            return None
+        title = extractor.extract_value(resource_info)
         return title.strip()
 
     def _get_plain_text(self, resource_info):

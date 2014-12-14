@@ -250,6 +250,22 @@ class LastModifiedExtractor(URLInfoExtractor, HTTPHeaderExtractor):
         return utc_dt
 
 
+class FilenameExtractor(HTTPHeaderExtractor):
+
+    def extract_value(self, resource_info):
+        if 'content-disposition' in resource_info.headers:
+            # TODO: We rely on requests.structures.CaseInsensitiveDict here
+            header_value = resource_info.headers['content-disposition']
+            items = [i.strip() for i in header_value.split(';')]
+            for item in items:
+                if item.lower().startswith('filename'):
+                    key, value = [token.strip() for token in item.split('=')]
+                    filename = value.replace('"', '')
+                    # TODO: Deal with encoding of non-ASCII filenames
+                    return filename
+        raise NoValueExtracted
+
+
 class KeywordsExtractor(MetadataExtractor):
 
     def extract_value(self, resource_info):

@@ -14,6 +14,7 @@ from ftw.crawler.extractors import DescriptionExtractor
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.extractors import Extractor
 from ftw.crawler.extractors import FieldMappingExtractor
+from ftw.crawler.extractors import FilenameExtractor
 from ftw.crawler.extractors import HeaderMappingExtractor
 from ftw.crawler.extractors import HTTPHeaderExtractor
 from ftw.crawler.extractors import IndexingTimeExtractor
@@ -332,6 +333,32 @@ class TestLastModifiedExtractor(DatetimeTestCase):
         resource_info = ResourceInfo(url_info={}, headers={})
         self.assertDatetimesAlmostEqual(
             datetime.utcnow(), extractor.extract_value(resource_info))
+
+
+class TestFilenameExtractor(TestCase):
+
+    def test_extracts_filename_from_content_disposition(self):
+        extractor = FilenameExtractor()
+        resource_info = ResourceInfo(
+            headers={'content-disposition': 'attachment; '
+                     'filename="document.pdf"'})
+
+        self.assertEquals('document.pdf',
+                          extractor.extract_value(resource_info))
+
+    def test_raises_if_no_content_disposition_header(self):
+        extractor = FilenameExtractor()
+        resource_info = ResourceInfo(headers={})
+
+        with self.assertRaises(NoValueExtracted):
+            extractor.extract_value(resource_info)
+
+    def test_raises_if_header_but_no_filename(self):
+        extractor = FilenameExtractor()
+        resource_info = ResourceInfo(headers={'content-disposition': ''})
+
+        with self.assertRaises(NoValueExtracted):
+            extractor.extract_value(resource_info)
 
 
 class TestKeywordsExtractor(TestCase):

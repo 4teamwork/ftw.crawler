@@ -1,11 +1,9 @@
+from ftw.crawler.log import setup_logging
 import argparse
-import logging
 import sys
 
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(levelname)-10s %(module)-16s %(message)s')
+setup_logging()
 
 
 def parse_args(argv=None):

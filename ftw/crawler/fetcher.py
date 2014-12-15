@@ -47,8 +47,7 @@ class ResourceFetcher(object):
 
         modified = self.is_modified()
         if not self.options.force and not modified:
-            log.debug("Resource {} hasn't been modified since it last got "
-                      "indexed, skipping.".format(url))
+            log.info("Skipping {} (not modified)".format(url))
             raise NotModified
 
         response = self.session.get(url, allow_redirects=False)

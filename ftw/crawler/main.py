@@ -112,10 +112,12 @@ def crawl_and_index(tempdir, config, options):
 
             # Index into Solr
             log.debug("Indexing {} into solr.".format(url))
-            solr.index(field_values)
+            response = solr.index(field_values)
+            if response.status_code == 200:
+                log.info("Indexed {}".format(url))
 
             log.debug("-" * 78)
-        log.debug("=" * 78)
+        log.info("=" * 78)
 
 
 def main():

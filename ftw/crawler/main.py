@@ -76,9 +76,12 @@ def crawl_and_index(tempdir, config, options):
         # Create a requests session to allow for connection pooling
         fetcher_session = requests.Session()
 
+        total = len(sitemap.url_infos)
         log.debug("Crawling {}...".format(sitemap.site.url))
-        for url_info in sitemap.url_infos:
+
+        for n, url_info in enumerate(sitemap.url_infos, start=1):
             url = url_info['loc']
+            progress = '[{}/{}]'.format(n, total)
 
             # If we're only indexing a specific URL, skip all others
             if options.url and not url == options.url:
@@ -97,7 +100,10 @@ def crawl_and_index(tempdir, config, options):
                 resource_info, fetcher_session, tempdir, options)
             try:
                 resource_info = fetcher.fetch()
-            except (AttemptedRedirect, NotModified):
+            except NotModified:
+                log.info("{}   Skipped {} (not modified)".format(progress, url))
+                continue
+            except AttemptedRedirect:
                 continue
             except FetchingError, e:
                 log.error(str(e))
@@ -114,7 +120,7 @@ def crawl_and_index(tempdir, config, options):
             log.debug("Indexing {} into solr.".format(url))
             response = solr.index(field_values)
             if response.status_code == 200:
-                log.info("Indexed {}".format(url))
+                log.info("{} * Indexed {}".format(progress, url))
 
             log.debug("-" * 78)
         log.info("=" * 78)

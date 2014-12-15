@@ -42,7 +42,14 @@ with the respective configuration as an argument:
 		[crawl-foo-org]
 		recipe = collective.recipe.scriptgen
 		cmd = ${buildout:bin-directory}/crawl
-		arguments = ${buildout:directory}/foo_org_config.py
+		arguments =
+		    ${buildout:directory}/foo_org_config.py
+		    --tika http://localhost:9998/
+		    --solr http://localhost:8983/solr
+
+  (The ``--tika`` and ``--solr`` command line arguments are optional, they
+  can also be set in the configuration file. If given, the command line
+  arguments take precedence over any parameters in the config file.)
 
 
 - Add a buildout config that downloads and configures a Tika JAXRS server:

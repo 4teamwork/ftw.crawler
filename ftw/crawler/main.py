@@ -93,7 +93,8 @@ def crawl_and_index(tempdir, config, options):
             resource_info = ResourceInfo(site=sitemap.site,
                                          url_info=url_info,
                                          last_indexed=last_indexed)
-            fetcher = ResourceFetcher(resource_info, fetcher_session, tempdir)
+            fetcher = ResourceFetcher(
+                resource_info, fetcher_session, tempdir, options)
             try:
                 resource_info = fetcher.fetch()
             except (AttemptedRedirect, NotModified):

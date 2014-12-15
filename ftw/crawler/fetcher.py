@@ -12,11 +12,12 @@ log = logging.getLogger(__name__)
 
 class ResourceFetcher(object):
 
-    def __init__(self, resource_info, session, tempdir):
+    def __init__(self, resource_info, session, tempdir, options):
         self.resource_info = resource_info
         self.url_info = resource_info.url_info
         self.session = session
         self.tempdir = tempdir
+        self.options = options
 
     def _mktmp(self):
         return tempfile.NamedTemporaryFile(dir=self.tempdir, delete=False)
@@ -45,7 +46,7 @@ class ResourceFetcher(object):
         url = self.url_info['loc']
 
         modified = self.is_modified()
-        if not modified:
+        if not self.options.force and not modified:
             log.debug("Resource {} hasn't been modified since it last got "
                       "indexed, skipping.".format(url))
             raise NotModified

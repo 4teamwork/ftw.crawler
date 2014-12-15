@@ -14,6 +14,7 @@ from ftw.crawler.extractors import DescriptionExtractor
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.extractors import Extractor
 from ftw.crawler.extractors import FieldMappingExtractor
+from ftw.crawler.extractors import FilenameExtractor
 from ftw.crawler.extractors import HeaderMappingExtractor
 from ftw.crawler.extractors import HTTPHeaderExtractor
 from ftw.crawler.extractors import IndexingTimeExtractor
@@ -75,7 +76,7 @@ class ExampleHTTPHeaderExtractor(HTTPHeaderExtractor):
 class TestExtractionEngine(TestCase):
 
     def setUp(self):
-        args = Namespace()
+        args = Namespace(tika=None, solr=None)
         args.config = BASIC_CONFIG
         self.config = deepcopy(get_config(args))
 
@@ -248,18 +249,29 @@ class TestTitleExtractor(TestCase):
         self.assertEquals('B\xc3\xa4rengraben',
                           extractor.extract_value(resource_info))
 
-    def test_extracts_title(self):
+    def test_extracts_title_from_metadata(self):
         extractor = TitleExtractor()
         resource_info = ResourceInfo(metadata={'title': 'value'},
                                      headers={})
         self.assertEquals('value', extractor.extract_value(resource_info))
 
-    def test_raises_if_no_value_found(self):
+    def test_falls_back_to_filename(self):
         extractor = TitleExtractor()
-        resource_info = ResourceInfo(metadata={},
-                                     headers={})
-        with self.assertRaises(NoValueExtracted):
-            extractor.extract_value(resource_info)
+        resource_info = ResourceInfo(
+            metadata={},
+            headers={'content-disposition': 'attachment; '
+                     'filename="document.pdf"'})
+        self.assertEquals('document.pdf',
+                          extractor.extract_value(resource_info))
+
+    def test_falls_back_to_url_slug(self):
+        extractor = TitleExtractor()
+        resource_info = ResourceInfo(
+            metadata={},
+            headers={},
+            url_info={'loc': 'http://example.org/my____title'})
+        self.assertEquals('my-title',
+                          extractor.extract_value(resource_info))
 
 
 class TestDescriptionExtractor(TestCase):
@@ -294,8 +306,10 @@ class TestSnippetTextExtractor(TestCase):
 
     def test_returns_plain_text_if_title_not_present(self):
         extractor = SnippetTextExtractor()
-        resource_info = ResourceInfo(metadata={}, text='Lorem Ipsum',
-                                     headers={})
+        resource_info = ResourceInfo(
+            metadata={'title': 'Foo'},
+            text='Lorem Ipsum',
+            headers={})
         self.assertEquals(
             'Lorem Ipsum', extractor.extract_value(resource_info))
 
@@ -332,6 +346,32 @@ class TestLastModifiedExtractor(DatetimeTestCase):
         resource_info = ResourceInfo(url_info={}, headers={})
         self.assertDatetimesAlmostEqual(
             datetime.utcnow(), extractor.extract_value(resource_info))
+
+
+class TestFilenameExtractor(TestCase):
+
+    def test_extracts_filename_from_content_disposition(self):
+        extractor = FilenameExtractor()
+        resource_info = ResourceInfo(
+            headers={'content-disposition': 'attachment; '
+                     'filename="document.pdf"'})
+
+        self.assertEquals('document.pdf',
+                          extractor.extract_value(resource_info))
+
+    def test_raises_if_no_content_disposition_header(self):
+        extractor = FilenameExtractor()
+        resource_info = ResourceInfo(headers={})
+
+        with self.assertRaises(NoValueExtracted):
+            extractor.extract_value(resource_info)
+
+    def test_raises_if_header_but_no_filename(self):
+        extractor = FilenameExtractor()
+        resource_info = ResourceInfo(headers={'content-disposition': ''})
+
+        with self.assertRaises(NoValueExtracted):
+            extractor.extract_value(resource_info)
 
 
 class TestKeywordsExtractor(TestCase):

@@ -1,3 +1,4 @@
+from argparse import Namespace
 from ftw.crawler.fetcher import ResourceFetcher
 from ftw.crawler.resource import ResourceInfo
 from ftw.crawler.sitemap import SitemapParser
@@ -47,15 +48,20 @@ class DatetimeTestCase(TestCase):
 
 class FetcherTestCase(TestCase):
 
-    def _create_fetcher(self, resource_info=None, session=None, tempdir=None):
+    def _create_fetcher(self, resource_info=None, session=None, tempdir=None,
+                        options=None):
         if resource_info is None:
             resource_info = ResourceInfo()
 
         if session is None:
             session = requests.Session()
 
+        if options is None:
+            options = Namespace(force=False)
+
         return ResourceFetcher(
-            resource_info=resource_info, session=session, tempdir=tempdir)
+            resource_info=resource_info, session=session, tempdir=tempdir,
+            options=options)
 
 
 SITEMAP = get_asset('sitemap.xml')

@@ -72,5 +72,5 @@ class ResourceFetcher(object):
         resource_info.headers = response.headers
         resource_info.filename = resource_file.name
 
-        log.info("Resource saved to {}".format(resource_info.filename))
+        log.debug("Resource saved to {}".format(resource_info.filename))
         return resource_info

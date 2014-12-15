@@ -23,14 +23,14 @@ from ftw.crawler.exceptions import FetchingError
 log = logging.getLogger(__name__)
 
 
-def print_fields(field_values):
-    print
-    print "=== FIELD VALUES ===="
+def display_fields(field_values):
+    log.debug("")
+    log.debug("=== EXTRACTED FIELD VALUES ===")
     for key, value in field_values.items():
         if key in ('SearchableText', 'snippetText'):
             value = repr(value.strip()[:60]) + '...'
-        print "{:<22} {}".format(key + ':', value)
-    print
+        log.debug("{:<22} {}".format(key + ':', value))
+    log.debug("")
 
 
 def get_sitemap(site):
@@ -76,7 +76,7 @@ def crawl_and_index(tempdir, config, options):
         # Create a requests session to allow for connection pooling
         fetcher_session = requests.Session()
 
-        log.info("Crawling {}...".format(sitemap.site.url))
+        log.debug("Crawling {}...".format(sitemap.site.url))
         for url_info in sitemap.url_infos:
             url = url_info['loc']
 
@@ -84,7 +84,7 @@ def crawl_and_index(tempdir, config, options):
             if options.url and not url == options.url:
                 continue
 
-            log.info("{} {}".format(url, str(url_info)))
+            log.debug("{}: {}".format(url, str(url_info)))
 
             # Get time this document was last indexed
             last_indexed = get_indexing_time(url, indexed_docs, config)
@@ -107,15 +107,15 @@ def crawl_and_index(tempdir, config, options):
             engine = ExtractionEngine(
                 config, resource_info, converter=TikaConverter(config.tika))
             field_values = engine.extract_field_values()
-            print_fields(field_values)
+            display_fields(field_values)
             os.unlink(resource_info.filename)
 
             # Index into Solr
-            log.info("Indexing {} into solr.".format(url))
+            log.debug("Indexing {} into solr.".format(url))
             solr.index(field_values)
 
-            print
-        print
+            log.debug("-" * 78)
+        log.debug("=" * 78)
 
 
 def main():

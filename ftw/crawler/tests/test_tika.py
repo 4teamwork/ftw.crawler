@@ -1,9 +1,9 @@
 from ftw.crawler.resource import ResourceInfo
+from ftw.crawler.testing import CrawlerTestCase
 from ftw.crawler.tests.helpers import MockResponse
 from ftw.crawler.tika import TikaConverter
 from mock import mock_open
 from mock import patch
-from unittest2 import TestCase
 import csv
 import io
 
@@ -12,7 +12,7 @@ import io
 open_mock = mock_open()
 
 
-class TestTikaConverter(TestCase):
+class TestTikaConverter(CrawlerTestCase):
 
     def _to_csv(self, mapping):
         csv_buffer = io.BytesIO()

@@ -8,6 +8,7 @@ from lxml import etree
 from unittest2 import TestCase
 import calendar
 import json
+import logging
 import requests
 
 
@@ -15,7 +16,16 @@ def timestamp(dt):
     return calendar.timegm(dt.utctimetuple())
 
 
-class XMLTestCase(TestCase):
+class CrawlerTestCase(TestCase):
+
+    def setUp(self):
+        logging.disable(logging.CRITICAL)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
+
+
+class XMLTestCase(CrawlerTestCase):
 
     def tostring(self, xml):
         return etree.tostring(xml, xml_declaration=True,
@@ -35,7 +45,7 @@ class XMLTestCase(TestCase):
         return self.assertEquals(expected_xml, actual_xml)
 
 
-class DatetimeTestCase(TestCase):
+class DatetimeTestCase(CrawlerTestCase):
 
     def assertDatetimesAlmostEqual(self, expected, actual, delta=2):
         expected_ts = timestamp(expected)
@@ -46,7 +56,7 @@ class DatetimeTestCase(TestCase):
                                       delta=delta, msg=msg)
 
 
-class FetcherTestCase(TestCase):
+class FetcherTestCase(CrawlerTestCase):
 
     def _create_fetcher(self, resource_info=None, session=None, tempdir=None,
                         options=None):
@@ -67,7 +77,7 @@ class FetcherTestCase(TestCase):
 SITEMAP = get_asset('sitemap.xml')
 
 
-class SitemapTestCase(TestCase):
+class SitemapTestCase(CrawlerTestCase):
 
     def create_sitemap(self, urls, site=None):
         sitemap = SitemapParser(SITEMAP, site=site)
@@ -94,7 +104,7 @@ SOLR_RESULTS_TEMPLATE = """\
 """
 
 
-class SolrTestCase(TestCase):
+class SolrTestCase(CrawlerTestCase):
 
     def create_solr_response(self, status=200, content=None, headers=None):
         if content is None:

@@ -5,16 +5,17 @@ from ftw.crawler.configuration import get_config
 from ftw.crawler.configuration import Site
 from ftw.crawler.exceptions import NoSuchField
 from ftw.crawler.extractors import Extractor
+from ftw.crawler.testing import CrawlerTestCase
 from pkg_resources import resource_filename
-from unittest2 import TestCase
 
 
 BASIC_CONFIG = resource_filename('ftw.crawler.tests.assets', 'basic_config.py')
 
 
-class TestConfig(TestCase):
+class TestConfig(CrawlerTestCase):
 
     def setUp(self):
+        CrawlerTestCase.setUp(self)
         self.site = Site('http://example.org')
         self.tika = 'http://localhost:9998'
         self.solr = 'http://localhost:8983/solr'
@@ -64,7 +65,7 @@ class TestConfig(TestCase):
             self.config.get_field('doesnt_exist')
 
 
-class TestSite(TestCase):
+class TestSite(CrawlerTestCase):
 
     def test_site_requires_url(self):
         with self.assertRaises(TypeError):
@@ -82,9 +83,10 @@ class TestSite(TestCase):
         self.assertEquals({'name': 'My Site'}, site.attributes)
 
 
-class TestField(TestCase):
+class TestField(CrawlerTestCase):
 
     def setUp(self):
+        CrawlerTestCase.setUp(self)
         self.name = 'Title'
         self.extractor = Extractor()
         self.type_ = str
@@ -111,7 +113,7 @@ class TestField(TestCase):
         self.assertEquals(field, extractor.field)
 
 
-class TestGetConfig(TestCase):
+class TestGetConfig(CrawlerTestCase):
 
     def test_get_config_loads_config_module_and_returns_config_instance(self):
         options = Namespace(tika=None, solr=None)

@@ -21,8 +21,8 @@ class TikaConverter(object):
         return response
 
     def extract_metadata(self, resource_info):
-        log.info("Extracting metadata from '{}' with "
-                 "tika JAXRS server.".format(resource_info.filename))
+        log.debug("Extracting metadata from '{}' with "
+                  "tika JAXRS server.".format(resource_info.filename))
 
         headers = {'Content-type': resource_info.content_type}
         response = self._tika_request('meta', resource_info, headers)
@@ -33,8 +33,8 @@ class TikaConverter(object):
         return SimpleMetadata(metadata)
 
     def extract_text(self, resource_info):
-        log.info("Extracting plain text from '{}' with "
-                 "tika JAXRS server.".format(resource_info.filename))
+        log.debug("Extracting plain text from '{}' with "
+                  "tika JAXRS server.".format(resource_info.filename))
 
         headers = {'Content-type': resource_info.content_type,
                    'Accept': 'text/plain'}

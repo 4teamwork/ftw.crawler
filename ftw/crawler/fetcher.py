@@ -47,8 +47,6 @@ class ResourceFetcher(object):
 
         modified = self.is_modified()
         if not self.options.force and not modified:
-            log.debug("Resource {} hasn't been modified since it last got "
-                      "indexed, skipping.".format(url))
             raise NotModified
 
         response = self.session.get(url, allow_redirects=False)
@@ -72,5 +70,5 @@ class ResourceFetcher(object):
         resource_info.headers = response.headers
         resource_info.filename = resource_file.name
 
-        log.info("Resource saved to {}".format(resource_info.filename))
+        log.debug("Resource saved to {}".format(resource_info.filename))
         return resource_info

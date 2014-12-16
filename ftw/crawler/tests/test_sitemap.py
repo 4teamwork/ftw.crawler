@@ -1,14 +1,14 @@
 from ftw.crawler.configuration import Site
 from ftw.crawler.sitemap import SitemapParser
+from ftw.crawler.testing import CrawlerTestCase
 from ftw.crawler.tests.helpers import get_asset
-from unittest2 import TestCase
 
 
 SITEMAP = get_asset('sitemap.xml')
 SITEMAP_REQ_ONLY = get_asset('sitemap_req_only.xml')
 
 
-class TestSitemapParser(TestCase):
+class TestSitemapParser(CrawlerTestCase):
 
     def test_parses_sitemap(self):
         sitemap = SitemapParser(SITEMAP)

@@ -32,12 +32,12 @@ from ftw.crawler.extractors import UIDExtractor
 from ftw.crawler.extractors import URLExtractor
 from ftw.crawler.extractors import URLInfoExtractor
 from ftw.crawler.resource import ResourceInfo
+from ftw.crawler.testing import CrawlerTestCase
 from ftw.crawler.testing import DatetimeTestCase
 from ftw.crawler.tests.helpers import MockConverter
 from ftw.crawler.utils import to_utc
 from mock import MagicMock
 from pkg_resources import resource_filename
-from unittest2 import TestCase
 
 
 BASIC_CONFIG = resource_filename('ftw.crawler.tests.assets', 'basic_config.py')
@@ -73,9 +73,10 @@ class ExampleHTTPHeaderExtractor(HTTPHeaderExtractor):
         return resource_info.headers[self.header_name]
 
 
-class TestExtractionEngine(TestCase):
+class TestExtractionEngine(CrawlerTestCase):
 
     def setUp(self):
+        CrawlerTestCase.setUp(self)
         args = Namespace(tika=None, solr=None)
         args.config = BASIC_CONFIG
         self.config = deepcopy(get_config(args))
@@ -222,7 +223,7 @@ class TestExtractionEngine(TestCase):
         self.assertEquals({}, engine.extract_field_values())
 
 
-class TestExtractorBaseClass(TestCase):
+class TestExtractorBaseClass(CrawlerTestCase):
 
     def test_extract_value_raises_not_implemented(self):
         extractor = Extractor()
@@ -231,7 +232,7 @@ class TestExtractorBaseClass(TestCase):
             extractor.extract_value(resource_info)
 
 
-class TestPlainTextExtractor(TestCase):
+class TestPlainTextExtractor(CrawlerTestCase):
 
     def test_returns_given_text(self):
         extractor = PlainTextExtractor()
@@ -239,7 +240,7 @@ class TestPlainTextExtractor(TestCase):
         self.assertEquals('foobar', extractor.extract_value(resource_info))
 
 
-class TestTitleExtractor(TestCase):
+class TestTitleExtractor(CrawlerTestCase):
 
     def test_extracts_title_from_x_document_title_http_header(self):
         extractor = TitleExtractor()
@@ -274,7 +275,7 @@ class TestTitleExtractor(TestCase):
                           extractor.extract_value(resource_info))
 
 
-class TestDescriptionExtractor(TestCase):
+class TestDescriptionExtractor(CrawlerTestCase):
 
     def test_extracts_description(self):
         extractor = DescriptionExtractor()
@@ -288,7 +289,7 @@ class TestDescriptionExtractor(TestCase):
             extractor.extract_value(resource_info)
 
 
-class TestCreatorExtractor(TestCase):
+class TestCreatorExtractor(CrawlerTestCase):
 
     def test_extracts_creator(self):
         extractor = CreatorExtractor()
@@ -302,7 +303,7 @@ class TestCreatorExtractor(TestCase):
             extractor.extract_value(resource_info)
 
 
-class TestSnippetTextExtractor(TestCase):
+class TestSnippetTextExtractor(CrawlerTestCase):
 
     def test_returns_plain_text_if_title_not_present(self):
         extractor = SnippetTextExtractor()
@@ -348,7 +349,7 @@ class TestLastModifiedExtractor(DatetimeTestCase):
             datetime.utcnow(), extractor.extract_value(resource_info))
 
 
-class TestFilenameExtractor(TestCase):
+class TestFilenameExtractor(CrawlerTestCase):
 
     def test_extracts_filename_from_content_disposition(self):
         extractor = FilenameExtractor()
@@ -374,7 +375,7 @@ class TestFilenameExtractor(TestCase):
             extractor.extract_value(resource_info)
 
 
-class TestKeywordsExtractor(TestCase):
+class TestKeywordsExtractor(CrawlerTestCase):
 
     def test_extracts_comma_separated_keywords(self):
         extractor = KeywordsExtractor()
@@ -396,7 +397,7 @@ class TestKeywordsExtractor(TestCase):
             extractor.extract_value(resource_info)
 
 
-class TestUIDExtractor(TestCase):
+class TestUIDExtractor(CrawlerTestCase):
 
     def test_builds_uid_based_on_url(self):
         extractor = UIDExtractor()
@@ -424,7 +425,7 @@ class TestUIDExtractor(TestCase):
         self.assertNotEqual(uid1, uid2)
 
 
-class TestSlugExtractor(TestCase):
+class TestSlugExtractor(CrawlerTestCase):
 
     def test_equals_basename_for_simple_urls(self):
         extractor = SlugExtractor()
@@ -465,7 +466,7 @@ class TestSlugExtractor(TestCase):
             'barengraben', extractor.extract_value(resource_info))
 
 
-class TestURLExtractor(TestCase):
+class TestURLExtractor(CrawlerTestCase):
 
     def test_extracts_url_from_urlinfo(self):
         extractor = URLExtractor()
@@ -474,7 +475,7 @@ class TestURLExtractor(TestCase):
                           extractor.extract_value(resource_info))
 
 
-class TestTargetURLExtractor(TestCase):
+class TestTargetURLExtractor(CrawlerTestCase):
 
     def test_extracts_target_url_from_urlinfo(self):
         extractor = TargetURLExtractor()
@@ -492,7 +493,7 @@ class TestTargetURLExtractor(TestCase):
                           extractor.extract_value(resource_info))
 
 
-class TestConstantExtractor(TestCase):
+class TestConstantExtractor(CrawlerTestCase):
 
     def test_returns_constant_value(self):
         extractor = ConstantExtractor(42)
@@ -509,7 +510,7 @@ class TestIndexingTimeExtractor(DatetimeTestCase):
                                         extractor.extract_value(resource_info))
 
 
-class TestSiteAttributeExtractor(TestCase):
+class TestSiteAttributeExtractor(CrawlerTestCase):
 
     def test_retrieves_attribute_from_site(self):
         site = Site('http://example.org', attributes={'name': 'My Site'})
@@ -527,7 +528,7 @@ class TestSiteAttributeExtractor(TestCase):
             extractor.extract_value(resource_info)
 
 
-class TestHeaderMappingExtractor(TestCase):
+class TestHeaderMappingExtractor(CrawlerTestCase):
 
     def test_maps_header_to_value(self):
         mapping = {'text/html': 'HTML', 'image/png': 'IMAGE'}
@@ -576,9 +577,10 @@ class TestHeaderMappingExtractor(TestCase):
         self.assertEquals('HTML', extractor.extract_value(resource_info))
 
 
-class TestFieldMappingExtractor(TestCase):
+class TestFieldMappingExtractor(CrawlerTestCase):
 
     def setUp(self):
+        CrawlerTestCase.setUp(self)
         # TODO: Refactor this testcase
         site = Site('http://example.org')
         self.resource_info = ResourceInfo()

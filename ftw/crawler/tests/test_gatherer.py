@@ -1,18 +1,19 @@
 from ftw.crawler.exceptions import FtwCrawlerException
 from ftw.crawler.gatherer import URLGatherer
+from ftw.crawler.testing import CrawlerTestCase
 from ftw.crawler.tests.helpers import get_asset
 from ftw.crawler.tests.helpers import MockResponse
 from mock import patch
-from unittest2 import TestCase
 
 
 SITEMAP = get_asset('sitemap.xml')
 SITEMAP_GZ = get_asset('sitemap.xml.gz')
 
 
-class TestGatherer(TestCase):
+class TestGatherer(CrawlerTestCase):
 
     def setUp(self):
+        CrawlerTestCase.setUp(self)
         self.response = MockResponse(SITEMAP)
 
     @patch('requests.get')

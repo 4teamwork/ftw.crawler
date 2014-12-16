@@ -16,9 +16,11 @@ import tempfile
 class TestResourceFetcher(FetcherTestCase):
 
     def setUp(self):
+        FetcherTestCase.setUp(self)
         self.tempdir = tempfile.mkdtemp(prefix='ftw.crawler.tests_')
 
     def tearDown(self):
+        FetcherTestCase.tearDown(self)
         shutil.rmtree(self.tempdir)
 
     @patch('requests.sessions.Session.get')

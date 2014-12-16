@@ -1,16 +1,17 @@
 from ftw.crawler.exceptions import SolrError
 from ftw.crawler.solr import solr_escape
 from ftw.crawler.solr import SolrConnector
+from ftw.crawler.testing import CrawlerTestCase
 from ftw.crawler.testing import SolrTestCase
 from ftw.crawler.tests.helpers import MockResponse
 from mock import patch
-from unittest2 import TestCase
 import json
 
 
 class TestSolrConnector(SolrTestCase):
 
     def setUp(self):
+        SolrTestCase.setUp(self)
         self.response_ok = self.create_solr_response()
 
         docs = [{'Title': 'Foobar'}, {'Title': 'Foo bar'}]
@@ -125,7 +126,7 @@ class TestSolrConnector(SolrTestCase):
         self.assertIn(('fl', 'Title,UID'), kwargs['params'].items())
 
 
-class TestSolrEscape(TestCase):
+class TestSolrEscape(CrawlerTestCase):
 
     def test_escapes_special_characters(self):
         value = r'+ - && || ! ( ) { } [ ] ^ " ~ * ? : \ /'

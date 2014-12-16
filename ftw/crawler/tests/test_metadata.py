@@ -1,8 +1,8 @@
 from ftw.crawler.metadata import SimpleMetadata
-from unittest2 import TestCase
+from ftw.crawler.testing import CrawlerTestCase
 
 
-class TestSimpleMetadata(TestCase):
+class TestSimpleMetadata(CrawlerTestCase):
 
     def test_original_prefixed_entries_are_preserved(self):
         metadata = {'dcterms:title': 'My Title'}

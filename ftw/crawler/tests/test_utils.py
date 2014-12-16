@@ -1,4 +1,5 @@
 from datetime import datetime
+from ftw.crawler.testing import CrawlerTestCase
 from ftw.crawler.utils import ExtendedJSONEncoder
 from ftw.crawler.utils import from_http_datetime
 from ftw.crawler.utils import from_iso_datetime
@@ -7,11 +8,10 @@ from ftw.crawler.utils import to_http_datetime
 from ftw.crawler.utils import to_iso_datetime
 from ftw.crawler.utils import to_utc
 from pytz import timezone
-from unittest2 import TestCase
 import pytz
 
 
-class TestGetContentType(TestCase):
+class TestGetContentType(CrawlerTestCase):
 
     def test_strips_charset(self):
         header_value = 'text/html; charset=utf-8'
@@ -22,7 +22,7 @@ class TestGetContentType(TestCase):
         self.assertEquals('text/html', get_content_type(header_value))
 
 
-class TestToUTC(TestCase):
+class TestToUTC(CrawlerTestCase):
 
     def test_doesnt_change_dt_already_in_utc(self):
         dt = datetime(2014, 12, 31, 15, 45, 30, tzinfo=pytz.utc)
@@ -40,7 +40,7 @@ class TestToUTC(TestCase):
                           to_utc(dt))
 
 
-class TestToISODateTime(TestCase):
+class TestToISODateTime(CrawlerTestCase):
 
     def test_serializes_naive_datetime_to_utc_iso_8601(self):
         dt = datetime(2014, 12, 31, 15, 45, 30, 999)
@@ -54,7 +54,7 @@ class TestToISODateTime(TestCase):
                           to_iso_datetime(dt))
 
 
-class TestFromISODateTime(TestCase):
+class TestFromISODateTime(CrawlerTestCase):
 
     def test_parses_utc_iso_8601_to_utc_datetime(self):
         dt = to_utc(datetime(2014, 12, 31, 15, 45, 30))
@@ -64,7 +64,7 @@ class TestFromISODateTime(TestCase):
         self.assertEquals(dt, from_iso_datetime('2014-12-31T16:45:30+01:00'))
 
 
-class TestToHTTPDateTime(TestCase):
+class TestToHTTPDateTime(CrawlerTestCase):
 
     def test_serializes_naive_datetime_to_rfc_2616_http_date(self):
         dt = datetime(2014, 12, 31, 15, 45, 30, 999)
@@ -78,7 +78,7 @@ class TestToHTTPDateTime(TestCase):
                           to_http_datetime(dt))
 
 
-class TestFromHTTPDateTime(TestCase):
+class TestFromHTTPDateTime(CrawlerTestCase):
 
     def test_parses_rfc2616_http_date_to_utc_datetime(self):
         from_http = from_http_datetime
@@ -97,7 +97,7 @@ class TestFromHTTPDateTime(TestCase):
         self.assertEquals(dt_s, from_http('Wed, 31 Dec 2014 15:45:30 GMT'))
 
 
-class TestExtendedJSONEncoder(TestCase):
+class TestExtendedJSONEncoder(CrawlerTestCase):
 
     def test_serializes_datetime(self):
         encoder = ExtendedJSONEncoder()

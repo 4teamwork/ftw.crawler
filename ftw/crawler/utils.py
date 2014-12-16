@@ -2,7 +2,9 @@ from wsgiref.handlers import format_date_time
 import calendar
 import datetime
 import dateutil.parser
+import errno
 import json
+import os
 import pytz
 
 
@@ -69,3 +71,13 @@ class ExtendedJSONEncoder(json.JSONEncoder):
             return to_iso_datetime(obj)
         else:
             return super(ExtendedJSONEncoder, self).default(obj)
+
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise

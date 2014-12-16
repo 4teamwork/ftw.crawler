@@ -1,5 +1,5 @@
 from ftw.crawler.utils import mkdir_p
-from logging import FileHandler
+from logging.handlers import TimedRotatingFileHandler
 from logging import Formatter
 from logging import StreamHandler
 import logging
@@ -40,19 +40,22 @@ def setup_logging():
     logging.root.addHandler(console_handler)
 
     # FileHandler logging to 'debug.log' at level DEBUG
-    debug_file_handler = FileHandler(os.path.join(log_dir, 'debug.log'))
+    debug_file_handler = TimedRotatingFileHandler(
+        os.path.join(log_dir, 'debug.log'), when='midnight', backupCount=30)
     debug_file_handler.setLevel(logging.DEBUG)
     debug_file_handler.setFormatter(file_formatter)
     logging.root.addHandler(debug_file_handler)
 
     # FileHandler logging to 'info.log' at level INFO
-    info_file_handler = FileHandler(os.path.join(log_dir, 'info.log'))
+    info_file_handler = TimedRotatingFileHandler(
+        os.path.join(log_dir, 'info.log'), when='midnight', backupCount=30)
     info_file_handler.setLevel(logging.INFO)
     info_file_handler.setFormatter(file_formatter)
     logging.root.addHandler(info_file_handler)
 
     # FileHandler logging to 'warn.log' at level WARN
-    warn_file_handler = FileHandler(os.path.join(log_dir, 'warn.log'))
+    warn_file_handler = TimedRotatingFileHandler(
+        os.path.join(log_dir, 'warn.log'), when='midnight', backupCount=30)
     warn_file_handler.setLevel(logging.WARN)
     warn_file_handler.setFormatter(file_formatter)
     logging.root.addHandler(warn_file_handler)

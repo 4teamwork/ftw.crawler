@@ -3,6 +3,7 @@ from ftw.crawler.exceptions import ExtractionError
 from ftw.crawler.exceptions import NoValueExtracted
 from ftw.crawler.utils import from_iso_datetime
 from ftw.crawler.utils import get_content_type
+from ftw.crawler.utils import normalize_whitespace
 from ftw.crawler.utils import safe_unicode
 from slugify import slugify
 from urllib import unquote_plus
@@ -130,7 +131,7 @@ class ExtractionEngine(object):
 class PlainTextExtractor(TextExtractor):
 
     def extract_value(self, resource_info):
-        return safe_unicode(resource_info.text)
+        return normalize_whitespace(resource_info.text)
 
 
 class UIDExtractor(URLInfoExtractor):
@@ -179,7 +180,7 @@ class TargetURLExtractor(URLInfoExtractor):
 
 class TitleExtractor(MetadataExtractor, HTTPHeaderExtractor, URLInfoExtractor):
 
-    def extract_value(self, resource_info):
+    def _extract_title(self, resource_info):
         # If present, X-Document-Title header takes precedence
         if 'X-Document-Title' in resource_info.headers:
             header_value = resource_info.headers['X-Document-Title']
@@ -199,6 +200,10 @@ class TitleExtractor(MetadataExtractor, HTTPHeaderExtractor, URLInfoExtractor):
 
         return value
 
+    def extract_value(self, resource_info):
+        title = self._extract_title(resource_info)
+        return normalize_whitespace(title)
+
 
 class DescriptionExtractor(MetadataExtractor):
 
@@ -206,7 +211,7 @@ class DescriptionExtractor(MetadataExtractor):
         value = resource_info.metadata.get('description')
         if value is None:
             raise NoValueExtracted
-        return safe_unicode(value)
+        return normalize_whitespace(value)
 
 
 class CreatorExtractor(MetadataExtractor):
@@ -224,12 +229,12 @@ class SnippetTextExtractor(TextExtractor, MetadataExtractor,
     def _get_title(self, resource_info):
         extractor = TitleExtractor()
         title = extractor.extract_value(resource_info)
-        return title.strip()
+        return title
 
     def _get_plain_text(self, resource_info):
         extractor = PlainTextExtractor()
         plain_text = extractor.extract_value(resource_info)
-        return plain_text.strip()
+        return plain_text
 
     def extract_value(self, resource_info):
         plain_text = safe_unicode(self._get_plain_text(resource_info))
@@ -238,8 +243,8 @@ class SnippetTextExtractor(TextExtractor, MetadataExtractor,
         snippet_text = plain_text
         # strip title at start of plain text
         if title is not None and snippet_text.startswith(title):
-            snippet_text = snippet_text.lstrip(title).strip()
-        return safe_unicode(snippet_text)
+            snippet_text = snippet_text.lstrip(title)
+        return normalize_whitespace(snippet_text)
 
 
 class LastModifiedExtractor(URLInfoExtractor, HTTPHeaderExtractor):

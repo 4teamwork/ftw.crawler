@@ -73,6 +73,16 @@ class ExtendedJSONEncoder(json.JSONEncoder):
             return super(ExtendedJSONEncoder, self).default(obj)
 
 
+def normalize_whitespace(s):
+    """Normalize whitespace in a string by
+    - replacing all occurences of CR, LF and TAB with a space
+    - replacing multiple spaces with only one
+    - removing any leading or trailing whitespace
+    """
+    s = safe_unicode(s)
+    return u' '.join(s.split())
+
+
 def mkdir_p(path):
     try:
         os.makedirs(path)

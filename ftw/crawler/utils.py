@@ -81,3 +81,9 @@ def mkdir_p(path):
             pass
         else:
             raise
+
+
+def safe_unicode(value):
+    if isinstance(value, str):
+        return value.decode('utf-8')
+    return value

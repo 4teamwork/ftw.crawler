@@ -33,6 +33,11 @@ class TestTikaConverter(CrawlerTestCase):
         extracted_metadata = tika.extract_metadata(resource_info)
 
         self.assertEquals(metadata, extracted_metadata)
+
+        for value in extracted_metadata.values():
+            if isinstance(value, basestring):
+                self.assertIsInstance(value, unicode)
+
         request.assert_called_with(
             'http://localhost:9998/meta',
             headers={'Content-type': 'application/pdf'},
@@ -47,7 +52,8 @@ class TestTikaConverter(CrawlerTestCase):
         tika = TikaConverter('http://localhost:9998')
         extracted_text = tika.extract_text(resource_info)
 
-        self.assertEquals('foo bar', extracted_text)
+        self.assertEquals(u'foo bar', extracted_text)
+        self.assertIsInstance(extracted_text, unicode)
         request.assert_called_with(
             'http://localhost:9998/tika',
             headers={'Content-type': 'application/pdf',

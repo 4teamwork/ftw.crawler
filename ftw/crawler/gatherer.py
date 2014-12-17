@@ -19,7 +19,7 @@ class URLGatherer(object):
         self.site_url = site_url
 
     def fetch_sitemap(self):
-        log.info('Fetching sitemap for {}'.format(self.site_url))
+        log.info(u'Fetching sitemap for {}'.format(self.site_url))
         for sm_name in SITEMAP_NAMES:
             url = urljoin(self.site_url, sm_name)
             response = requests.get(url)

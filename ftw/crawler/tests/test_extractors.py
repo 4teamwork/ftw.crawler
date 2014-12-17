@@ -35,6 +35,7 @@ from ftw.crawler.resource import ResourceInfo
 from ftw.crawler.testing import CrawlerTestCase
 from ftw.crawler.testing import DatetimeTestCase
 from ftw.crawler.tests.helpers import MockConverter
+from ftw.crawler.utils import safe_unicode
 from ftw.crawler.utils import to_utc
 from mock import MagicMock
 from pkg_resources import resource_filename
@@ -49,7 +50,7 @@ class ExampleMetadataExtractor(MetadataExtractor):
         value = resource_info.metadata.get('example')
         if value is None:
             raise NoValueExtracted
-        return value
+        return safe_unicode(value)
 
 
 class ExampleTextExtractor(TextExtractor):
@@ -61,7 +62,7 @@ class ExampleTextExtractor(TextExtractor):
 class ExampleURLInfoExtractor(URLInfoExtractor):
 
     def extract_value(self, resource_info):
-        return resource_info.url_info['loc']
+        return safe_unicode(resource_info.url_info['loc'])
 
 
 class ExampleHTTPHeaderExtractor(HTTPHeaderExtractor):
@@ -70,7 +71,10 @@ class ExampleHTTPHeaderExtractor(HTTPHeaderExtractor):
         self.header_name = header_name
 
     def extract_value(self, resource_info):
-        return resource_info.headers[self.header_name]
+        header_value = resource_info.headers[self.header_name]
+        # In the rare case of non-ASCII characters in HTTP header field values,
+        # we can assume them to be in ISO-8859-1 (see RFC 7230, section 3.2.4)
+        return header_value.decode('latin1')
 
 
 class TestExtractionEngine(CrawlerTestCase):
@@ -100,18 +104,18 @@ class TestExtractionEngine(CrawlerTestCase):
         return engine
 
     def test_applies_metadata_extractors_to_converter_metadata(self):
-        converter = MockConverter({'example': 'value', 'other': 'data'})
+        converter = MockConverter({'example': u'value', 'other': u'data'})
         field = Field('EXAMPLE', extractor=ExampleMetadataExtractor())
         engine = self._create_engine(fields=[field], converter=converter)
 
-        self.assertEquals({'EXAMPLE': 'value'}, engine.extract_field_values())
+        self.assertEquals({'EXAMPLE': u'value'}, engine.extract_field_values())
 
     def test_applies_text_extractors_to_converter_plain_text(self):
-        converter = MockConverter(text='foo bar')
+        converter = MockConverter(text=u'foo bar')
         field = Field('EXAMPLE', extractor=ExampleTextExtractor())
         engine = self._create_engine(fields=[field], converter=converter)
 
-        self.assertEquals({'EXAMPLE': 'foo bar'},
+        self.assertEquals({'EXAMPLE': u'foo bar'},
                           engine.extract_field_values())
 
     def test_applies_urlinfo_extractors_to_urlinfo(self):
@@ -120,7 +124,7 @@ class TestExtractionEngine(CrawlerTestCase):
         engine = self._create_engine(
             resource_info=resource_info, fields=[field])
 
-        self.assertEquals({'EXAMPLE': 'http://example.org'},
+        self.assertEquals({'EXAMPLE': u'http://example.org'},
                           engine.extract_field_values())
 
     def test_applies_site_config_extractors_to_site(self):
@@ -130,7 +134,7 @@ class TestExtractionEngine(CrawlerTestCase):
         engine = self._create_engine(
             fields=[field], resource_info=resource_info)
 
-        self.assertEquals({'EXAMPLE': 'My Site'},
+        self.assertEquals({'EXAMPLE': u'My Site'},
                           engine.extract_field_values())
 
     def test_applies_http_header_extractors_to_headers(self):
@@ -140,7 +144,7 @@ class TestExtractionEngine(CrawlerTestCase):
         engine = self._create_engine(
             fields=[field], resource_info=resource_info)
 
-        self.assertEquals({'EXAMPLE': 'value'},
+        self.assertEquals({'EXAMPLE': u'value'},
                           engine.extract_field_values())
 
     def test_set_metadata_from_converter_on_resource_info(self):
@@ -153,11 +157,11 @@ class TestExtractionEngine(CrawlerTestCase):
 
     def test_sets_text_from_converter_on_resource_info(self):
         converter = MagicMock()
-        converter.extract_text = MagicMock(return_value='foo bar')
+        converter.extract_text = MagicMock(return_value=u'foo bar')
         resource_info = ResourceInfo()
 
         self._create_engine(resource_info=resource_info, converter=converter)
-        self.assertEquals('foo bar', resource_info.text)
+        self.assertEquals(u'foo bar', resource_info.text)
 
     def test_raises_type_error_for_unknown_extractor_type(self):
         field = Field('foo', extractor=Extractor())
@@ -190,12 +194,12 @@ class TestExtractionEngine(CrawlerTestCase):
 
         field = Field('required_field',
                       extractor=ExampleMetadataExtractor(),
-                      type_=str,
+                      type_=unicode,
                       required=True)
         engine = self._create_engine(fields=[field], converter=converter)
 
         self.assertEquals(
-            {'required_field': ''}, engine.extract_field_values())
+            {'required_field': u''}, engine.extract_field_values())
 
     def test_provides_default_for_required_datetime_fields(self):
         converter = MagicMock()
@@ -217,7 +221,7 @@ class TestExtractionEngine(CrawlerTestCase):
 
         field = Field('optional_field',
                       extractor=ExampleMetadataExtractor(),
-                      type_=str)
+                      type_=unicode)
         engine = self._create_engine(fields=[field], converter=converter)
 
         self.assertEquals({}, engine.extract_field_values())
@@ -236,8 +240,11 @@ class TestPlainTextExtractor(CrawlerTestCase):
 
     def test_returns_given_text(self):
         extractor = PlainTextExtractor()
-        resource_info = ResourceInfo(text='foobar')
-        self.assertEquals('foobar', extractor.extract_value(resource_info))
+        resource_info = ResourceInfo(text=u'foobar')
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'foobar', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
 
 class TestTitleExtractor(CrawlerTestCase):
@@ -245,16 +252,21 @@ class TestTitleExtractor(CrawlerTestCase):
     def test_extracts_title_from_x_document_title_http_header(self):
         extractor = TitleExtractor()
         resource_info = ResourceInfo(
-            metadata={'title': 'dont-use-this'},
+            metadata={'title': u'dont-use-this'},
             headers={'X-Document-Title': 'QsOkcmVuZ3JhYmVuCg=='})
-        self.assertEquals('B\xc3\xa4rengraben',
-                          extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'B\xe4rengraben', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_extracts_title_from_metadata(self):
         extractor = TitleExtractor()
-        resource_info = ResourceInfo(metadata={'title': 'value'},
+        resource_info = ResourceInfo(metadata={'title': u'value'},
                                      headers={})
-        self.assertEquals('value', extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'value', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_falls_back_to_filename(self):
         extractor = TitleExtractor()
@@ -262,8 +274,10 @@ class TestTitleExtractor(CrawlerTestCase):
             metadata={},
             headers={'content-disposition': 'attachment; '
                      'filename="document.pdf"'})
-        self.assertEquals('document.pdf',
-                          extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'document.pdf', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_falls_back_to_url_slug(self):
         extractor = TitleExtractor()
@@ -271,8 +285,10 @@ class TestTitleExtractor(CrawlerTestCase):
             metadata={},
             headers={},
             url_info={'loc': 'http://example.org/my____title'})
-        self.assertEquals('my-title',
-                          extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'my-title', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
 
 class TestDescriptionExtractor(CrawlerTestCase):
@@ -280,7 +296,10 @@ class TestDescriptionExtractor(CrawlerTestCase):
     def test_extracts_description(self):
         extractor = DescriptionExtractor()
         resource_info = ResourceInfo(metadata={'description': 'value'})
-        self.assertEquals('value', extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'value', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_raises_if_no_value_found(self):
         extractor = DescriptionExtractor()
@@ -294,7 +313,10 @@ class TestCreatorExtractor(CrawlerTestCase):
     def test_extracts_creator(self):
         extractor = CreatorExtractor()
         resource_info = ResourceInfo(metadata={'creator': 'John Doe'})
-        self.assertEquals('John Doe', extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'John Doe', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_raises_if_no_value_found(self):
         extractor = CreatorExtractor()
@@ -311,8 +333,10 @@ class TestSnippetTextExtractor(CrawlerTestCase):
             metadata={'title': 'Foo'},
             text='Lorem Ipsum',
             headers={})
-        self.assertEquals(
-            'Lorem Ipsum', extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'Lorem Ipsum', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_strips_title_from_beginning_of_plain_text(self):
         extractor = SnippetTextExtractor()
@@ -320,8 +344,43 @@ class TestSnippetTextExtractor(CrawlerTestCase):
             metadata={'title': 'My Title'},
             text='My Title\nLorem Ipsum',
             headers={})
-        self.assertEquals(
-            'Lorem Ipsum', extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'Lorem Ipsum', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
+
+    def test_handles_non_ascii_content(self):
+        extractor = SnippetTextExtractor()
+
+        # Both text and title unicode
+        resource_info = ResourceInfo(
+            metadata={'title': u'B\xe4ren'},
+            text=u'B\xe4rengraben',
+            headers={})
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'graben', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
+
+        # Both text and title utf-8
+        resource_info = ResourceInfo(
+            metadata={'title': 'B\xc3\xa4ren'},
+            text='B\xc3\xa4rengraben',
+            headers={})
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'graben', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
+
+        # Mix of unicode and utf-8
+        resource_info = ResourceInfo(
+            metadata={'title': u'B\xe4ren'},
+            text='B\xc3\xa4rengraben',
+            headers={})
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'graben', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
 
 class TestLastModifiedExtractor(DatetimeTestCase):
@@ -356,9 +415,10 @@ class TestFilenameExtractor(CrawlerTestCase):
         resource_info = ResourceInfo(
             headers={'content-disposition': 'attachment; '
                      'filename="document.pdf"'})
+        extracted_value = extractor.extract_value(resource_info)
 
-        self.assertEquals('document.pdf',
-                          extractor.extract_value(resource_info))
+        self.assertEquals(u'document.pdf', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_raises_if_no_content_disposition_header(self):
         extractor = FilenameExtractor()
@@ -381,14 +441,20 @@ class TestKeywordsExtractor(CrawlerTestCase):
         extractor = KeywordsExtractor()
         resource_info = ResourceInfo(
             metadata={'keywords': 'Foo, Bar,     Baz'})
-        self.assertEquals(
-            ['Foo', 'Bar', 'Baz'], extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals([u'Foo', u'Bar', u'Baz'], extracted_value)
+        for item in extracted_value:
+            self.assertIsInstance(item, unicode)
 
     def test_extracts_whitespace_separated_keywords(self):
         extractor = KeywordsExtractor()
-        resource_info = ResourceInfo(metadata={'keywords': 'Foo Bar     Baz'})
-        self.assertEquals(
-            ['Foo', 'Bar', 'Baz'], extractor.extract_value(resource_info))
+        resource_info = ResourceInfo(metadata={'keywords': u'Foo Bar     Baz'})
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals([u'Foo', u'Bar', u'Baz'], extracted_value)
+        for item in extracted_value:
+            self.assertIsInstance(item, unicode)
 
     def test_raises_if_no_value_found(self):
         extractor = KeywordsExtractor()
@@ -402,8 +468,11 @@ class TestUIDExtractor(CrawlerTestCase):
     def test_builds_uid_based_on_url(self):
         extractor = UIDExtractor()
         resource_info = ResourceInfo(url_info={'loc': 'http://example.org'})
-        self.assertEquals('dab521de-65f9-250b-4cca-7383feef67dc',
-                          extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'dab521de-65f9-250b-4cca-7383feef67dc',
+                          extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_uid_stays_constant_for_same_url(self):
         extractor = UIDExtractor()
@@ -431,39 +500,55 @@ class TestSlugExtractor(CrawlerTestCase):
         extractor = SlugExtractor()
         resource_info = ResourceInfo(
             url_info={'loc': 'http://example.org/foo/bar'})
-        self.assertEquals('bar', extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'bar', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_deals_with_trailing_slash(self):
         extractor = SlugExtractor()
         resource_info = ResourceInfo(
             url_info={'loc': 'http://example.org/foo/bar/'})
-        self.assertEquals('bar', extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'bar', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_defaults_to_index_html_for_empty_basename(self):
         extractor = SlugExtractor()
         resource_info = ResourceInfo(
             url_info={'loc': 'http://example.org/'})
-        self.assertEquals('index-html', extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'index-html', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_deals_with_url_encoding(self):
         extractor = SlugExtractor()
         resource_info = ResourceInfo(
             url_info={'loc': 'http://example.org/foo%%20bar'})
-        self.assertEquals('foo-bar', extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'foo-bar', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_deals_with_non_ascii_characters_utf8(self):
         extractor = SlugExtractor()
         resource_info = ResourceInfo(
             url_info={'loc': 'http://example.org/b\xc3\xa4rengraben'})
-        self.assertEquals(
-            'barengraben', extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'barengraben', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_deals_with_non_ascii_characters_unicode(self):
         extractor = SlugExtractor()
         resource_info = ResourceInfo(
             url_info={'loc': u'http://example.org/b\xe4rengraben'})
-        self.assertEquals(
-            'barengraben', extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'barengraben', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
 
 class TestURLExtractor(CrawlerTestCase):
@@ -471,8 +556,10 @@ class TestURLExtractor(CrawlerTestCase):
     def test_extracts_url_from_urlinfo(self):
         extractor = URLExtractor()
         resource_info = ResourceInfo(url_info={'loc': 'http://example.org'})
-        self.assertEquals('http://example.org',
-                          extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'http://example.org', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
 
 class TestTargetURLExtractor(CrawlerTestCase):
@@ -483,22 +570,50 @@ class TestTargetURLExtractor(CrawlerTestCase):
             'loc': 'http://example.org',
             'target': 'http://example.org/target',
         })
-        self.assertEquals('http://example.org/target',
-                          extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'http://example.org/target', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_defaults_to_loc_if_no_target_given(self):
         extractor = TargetURLExtractor()
         resource_info = ResourceInfo(url_info={'loc': 'http://example.org'})
-        self.assertEquals('http://example.org',
-                          extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'http://example.org', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
 
 class TestConstantExtractor(CrawlerTestCase):
 
     def test_returns_constant_value(self):
         extractor = ConstantExtractor(42)
+        field = Field('example', extractor)
+        extractor.bind(field)
         resource_info = ResourceInfo()
+
         self.assertEquals(42, extractor.extract_value(resource_info))
+
+    def test_returns_unicode_for_string_constant(self):
+        extractor = ConstantExtractor('foo')
+        field = Field('example', extractor)
+        extractor.bind(field)
+        resource_info = ResourceInfo()
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'foo', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
+
+    def test_returns_unicode_for_multivalued_string_constant(self):
+        extractor = ConstantExtractor(['foo', 'bar'])
+        field = Field('example', extractor, multivalued=True)
+        extractor.bind(field)
+        resource_info = ResourceInfo()
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals([u'foo', u'bar'], extracted_value)
+        for item in extracted_value:
+            self.assertIsInstance(item, unicode)
 
 
 class TestIndexingTimeExtractor(DatetimeTestCase):
@@ -506,8 +621,9 @@ class TestIndexingTimeExtractor(DatetimeTestCase):
     def test_returns_current_time(self):
         extractor = IndexingTimeExtractor()
         resource_info = ResourceInfo()
-        self.assertDatetimesAlmostEqual(datetime.utcnow(),
-                                        extractor.extract_value(resource_info))
+        self.assertDatetimesAlmostEqual(
+            datetime.utcnow(),
+            extractor.extract_value(resource_info))
 
 
 class TestSiteAttributeExtractor(CrawlerTestCase):
@@ -517,7 +633,10 @@ class TestSiteAttributeExtractor(CrawlerTestCase):
         extractor = SiteAttributeExtractor('name')
         resource_info = ResourceInfo(site=site)
 
-        self.assertEquals('My Site', extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'My Site', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_raises_if_attribute_not_found(self):
         site = Site('http://example.org')
@@ -535,24 +654,32 @@ class TestHeaderMappingExtractor(CrawlerTestCase):
         extractor = HeaderMappingExtractor('content-type', mapping)
 
         resource_info = ResourceInfo(headers={'content-type': 'text/html'})
-        self.assertEquals('HTML', extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+        self.assertEquals('HTML', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
         resource_info = ResourceInfo(headers={'content-type': 'image/png'})
-        self.assertEquals('IMAGE', extractor.extract_value(resource_info))
+        extracted_value = extractor.extract_value(resource_info)
+        self.assertEquals('IMAGE', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_uses_default_if_header_not_found(self):
         extractor = HeaderMappingExtractor(
             'content-type', {}, default='DEFAULT')
         resource_info = ResourceInfo(headers={})
+        extracted_value = extractor.extract_value(resource_info)
 
-        self.assertEquals('DEFAULT', extractor.extract_value(resource_info))
+        self.assertEquals('DEFAULT', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_uses_default_if_header_not_mapped(self):
         extractor = HeaderMappingExtractor(
             'pragma', {}, default='DEFAULT')
         resource_info = ResourceInfo(headers={'pragma': 'no-cache'})
+        extracted_value = extractor.extract_value(resource_info)
 
-        self.assertEquals('DEFAULT', extractor.extract_value(resource_info))
+        self.assertEquals('DEFAULT', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_raises_if_no_default_and_header_not_found(self):
         extractor = HeaderMappingExtractor('content-type', {})
@@ -573,8 +700,10 @@ class TestHeaderMappingExtractor(CrawlerTestCase):
         extractor = HeaderMappingExtractor('content-type', mapping)
         resource_info = ResourceInfo(
             headers={'content-type': 'text/html; charset=utf-8'})
+        extracted_value = extractor.extract_value(resource_info)
 
-        self.assertEquals('HTML', extractor.extract_value(resource_info))
+        self.assertEquals('HTML', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
 
 class TestFieldMappingExtractor(CrawlerTestCase):
@@ -606,8 +735,10 @@ class TestFieldMappingExtractor(CrawlerTestCase):
 
     def test_maps_field_to_value(self):
         extractor = self.config.get_field('category').extractor
-        self.assertEquals(
-            'TRAVEL', extractor.extract_value(self.resource_info))
+        extracted_value = extractor.extract_value(self.resource_info)
+
+        self.assertEquals(u'TRAVEL', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_raises_if_field_not_found(self):
         category = self.config.get_field('category')
@@ -624,9 +755,10 @@ class TestFieldMappingExtractor(CrawlerTestCase):
         subcategory = self.config.get_field('subcategory')
         subcategory.extractor = ConstantExtractor(None)
         subcategory.extractor.bind(subcategory)
+        extracted_value = category.extractor.extract_value(self.resource_info)
 
-        self.assertEquals(
-            'DEFAULT', category.extractor.extract_value(self.resource_info))
+        self.assertEquals(u'DEFAULT', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_raises_if_no_default_and_field_doesnt_return_value(self):
         category = self.config.get_field('category')
@@ -643,9 +775,10 @@ class TestFieldMappingExtractor(CrawlerTestCase):
         subcategory = self.config.get_field('subcategory')
         subcategory.extractor = ConstantExtractor('physics')
         subcategory.extractor.bind(subcategory)
+        extracted_value = category.extractor.extract_value(self.resource_info)
 
-        self.assertEquals(
-            'DEFAULT', category.extractor.extract_value(self.resource_info))
+        self.assertEquals(u'DEFAULT', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
 
     def test_raises_if_no_default_and_field_value_not_mapped(self):
         category = self.config.get_field('category')

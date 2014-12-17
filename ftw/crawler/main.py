@@ -24,13 +24,16 @@ log = logging.getLogger(__name__)
 
 
 def display_fields(field_values):
-    log.debug("")
-    log.debug("=== EXTRACTED FIELD VALUES ===")
+    log.debug(u"")
+    log.debug(u"=== EXTRACTED FIELD VALUES ===")
     for key, value in field_values.items():
         if key in ('SearchableText', 'snippetText'):
-            value = repr(value.strip()[:60]) + '...'
-        log.debug("{:<22} {}".format(key + ':', value))
-    log.debug("")
+            value = value.replace('\n', '\\n ').replace('\r', '\\r ')
+            value = value[:60] + '...'
+
+        log.debug(u"{:<22} {}".format(unicode(key) + u':', value))
+
+    log.debug(u"")
 
 
 def get_sitemap(site):
@@ -77,7 +80,7 @@ def crawl_and_index(tempdir, config, options):
         fetcher_session = requests.Session()
 
         total = len(sitemap.url_infos)
-        log.debug("Crawling {}...".format(sitemap.site.url))
+        log.debug(u"Crawling {}...".format(sitemap.site.url))
 
         for n, url_info in enumerate(sitemap.url_infos, start=1):
             url = url_info['loc']
@@ -87,7 +90,7 @@ def crawl_and_index(tempdir, config, options):
             if options.url and not url == options.url:
                 continue
 
-            log.debug("{}: {}".format(url, str(url_info)))
+            log.debug(u"{}: {}".format(url, unicode(url_info)))
 
             # Get time this document was last indexed
             last_indexed = get_indexing_time(url, indexed_docs, config)
@@ -101,12 +104,12 @@ def crawl_and_index(tempdir, config, options):
             try:
                 resource_info = fetcher.fetch()
             except NotModified:
-                log.info("{}   Skipped {} (not modified)".format(progress, url))
+                log.info(u"{}   Skipped {} (not modified)".format(progress, url))
                 continue
             except AttemptedRedirect:
                 continue
             except FetchingError, e:
-                log.error(str(e))
+                log.error(unicode(e))
                 continue
 
             # Extract metadata and plain text
@@ -117,13 +120,13 @@ def crawl_and_index(tempdir, config, options):
             os.unlink(resource_info.filename)
 
             # Index into Solr
-            log.debug("Indexing {} into solr.".format(url))
+            log.debug(u"Indexing {} into solr.".format(url))
             response = solr.index(field_values)
             if response.status_code == 200:
-                log.info("{} * Indexed {}".format(progress, url))
+                log.info(u"{} * Indexed {}".format(progress, url))
 
-            log.debug("-" * 78)
-        log.info("=" * 78)
+            log.debug(u"-" * 78)
+        log.info(u"=" * 78)
 
 
 def main():
@@ -131,7 +134,7 @@ def main():
     config = get_config(options)
 
     tempdir = tempfile.mkdtemp(prefix='ftw.crawler_')
-    log.debug("Using temporary directory {}".format(tempdir))
+    log.debug(u"Using temporary directory {}".format(tempdir))
     try:
         crawl_and_index(tempdir, config, options)
     finally:

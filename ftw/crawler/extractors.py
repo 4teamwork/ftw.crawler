@@ -1,3 +1,4 @@
+from BeautifulSoup import UnicodeDammit
 from datetime import datetime
 from ftw.crawler.exceptions import ExtractionError
 from ftw.crawler.exceptions import NoValueExtracted
@@ -5,11 +6,19 @@ from ftw.crawler.utils import from_iso_datetime
 from ftw.crawler.utils import get_content_type
 from ftw.crawler.utils import normalize_whitespace
 from ftw.crawler.utils import safe_unicode
+from ftw.crawler.xml_utils import MARKUP_TYPES
+from ftw.crawler.xml_utils import remove_namespaces
+from lxml import etree
 from slugify import slugify
 from urllib import unquote_plus
 from urlparse import urlparse
 from uuid import UUID
 import hashlib
+import logging
+import lxml.html
+
+
+log = logging.getLogger(__name__)
 
 
 class Extractor(object):
@@ -35,6 +44,11 @@ class MetadataExtractor(Extractor):
 
 class TextExtractor(Extractor):
     """Base class for all extractors that extract plain text via Tika.
+    """
+
+
+class TextFromMarkupExtractor(Extractor):
+    """Base class for all extractors that extract text from markup content.
     """
 
 
@@ -66,7 +80,8 @@ class ExtractionEngine(object):
 
     extractor_types = (
         MetadataExtractor, TextExtractor, URLInfoExtractor,
-        ResourceIndependentExtractor, SiteConfigExtractor, HTTPHeaderExtractor
+        ResourceIndependentExtractor, SiteConfigExtractor, HTTPHeaderExtractor,
+        TextFromMarkupExtractor
     )
 
     def __init__(self, config, resource_info, converter):
@@ -186,6 +201,14 @@ class TitleExtractor(MetadataExtractor, HTTPHeaderExtractor, URLInfoExtractor):
             header_value = resource_info.headers['X-Document-Title']
             return header_value.decode('base64').decode('utf-8').strip()
 
+        # Next, try to get title from a `div#content h1` element
+        h1_extractor = XPathExtractor("//div[@id='content']/h1")
+        try:
+            value = h1_extractor.extract_value(resource_info)
+            return value
+        except NoValueExtracted:
+            pass
+
         # Next, attempt to get a title from Tika metadata
         value = resource_info.metadata.get('title')
 
@@ -205,13 +228,70 @@ class TitleExtractor(MetadataExtractor, HTTPHeaderExtractor, URLInfoExtractor):
         return normalize_whitespace(title)
 
 
+class XPathExtractor(TextFromMarkupExtractor, URLInfoExtractor):
+
+    def __init__(self, xpath):
+        self.xpath = xpath
+
+    def _sniff_encoding(self, resource_info):
+        with open(resource_info.filename) as f:
+            data = f.read()
+            proposed = ["utf-8", "latin1"]
+            converted = UnicodeDammit(data, proposed, isHTML=True)
+        del data
+        return converted.originalEncoding
+
+    def _get_tree(self, resource_info, encoding):
+        # Use HTMLParser for everything, even XML / XHTML.
+        if encoding is not None:
+            parser = lxml.html.HTMLParser(encoding=encoding)
+        else:
+            parser = lxml.html.HTMLParser()
+        tree = etree.parse(resource_info.filename, parser)
+        tree = remove_namespaces(tree)
+        return tree
+
+    def extract_value(self, resource_info):
+        if not resource_info.content_type in MARKUP_TYPES:
+            raise NoValueExtracted
+
+        encoding = self._sniff_encoding(resource_info)
+
+        tree = self._get_tree(resource_info, encoding)
+        nodes = tree.xpath(self.xpath)
+
+        if len(nodes) == 0:
+            raise NoValueExtracted
+
+        elif len(nodes) > 1:
+            log.warn(
+                "XPath expression '{}' returned {} results for document at "
+                "{}, using only first one".format(
+                    self.xpath, len(nodes), resource_info.url_info['loc']))
+
+        target_node = nodes[0]
+        text = target_node.text_content()
+
+        if isinstance(text, etree._ElementUnicodeResult):
+            text = unicode(text)
+        elif isinstance(text, etree._ElementStringResult):
+            text = text.decode(encoding)
+        else:
+            log.error(
+                "Unexpected return type for xpath(), expected"
+                "'_ElementUnicodeResult'. (Node: {})".format(target_node))
+            raise NoValueExtracted
+
+        return text
+
+
 class DescriptionExtractor(MetadataExtractor):
 
     def extract_value(self, resource_info):
         value = resource_info.metadata.get('description')
         if value is None:
             raise NoValueExtracted
-        return normalize_whitespace(value)
+        return safe_unicode(value)
 
 
 class CreatorExtractor(MetadataExtractor):
@@ -229,12 +309,12 @@ class SnippetTextExtractor(TextExtractor, MetadataExtractor,
     def _get_title(self, resource_info):
         extractor = TitleExtractor()
         title = extractor.extract_value(resource_info)
-        return title
+        return title.strip()
 
     def _get_plain_text(self, resource_info):
         extractor = PlainTextExtractor()
         plain_text = extractor.extract_value(resource_info)
-        return plain_text
+        return plain_text.strip()
 
     def extract_value(self, resource_info):
         plain_text = safe_unicode(self._get_plain_text(resource_info))
@@ -244,7 +324,7 @@ class SnippetTextExtractor(TextExtractor, MetadataExtractor,
         # strip title at start of plain text
         if title is not None and snippet_text.startswith(title):
             snippet_text = snippet_text.lstrip(title)
-        return normalize_whitespace(snippet_text)
+        return safe_unicode(snippet_text)
 
 
 class LastModifiedExtractor(URLInfoExtractor, HTTPHeaderExtractor):

@@ -31,6 +31,7 @@ from ftw.crawler.extractors import TitleExtractor
 from ftw.crawler.extractors import UIDExtractor
 from ftw.crawler.extractors import URLExtractor
 from ftw.crawler.extractors import URLInfoExtractor
+from ftw.crawler.extractors import XPathExtractor
 from ftw.crawler.resource import ResourceInfo
 from ftw.crawler.testing import CrawlerTestCase
 from ftw.crawler.testing import DatetimeTestCase
@@ -289,6 +290,51 @@ class TestTitleExtractor(CrawlerTestCase):
 
         self.assertEquals(u'my-title', extracted_value)
         self.assertIsInstance(extracted_value, unicode)
+
+
+class TestXpathExtractor(CrawlerTestCase):
+
+    def setUp(self):
+        CrawlerTestCase.setUp(self)
+        self.extractor = XPathExtractor("//div[@id='content']/h1")
+
+    def _create_resource(self, asset_name):
+        doc_fn = resource_filename('ftw.crawler.tests.assets', asset_name)
+        resource_info = ResourceInfo(
+            metadata={},
+            url_info={'loc': 'http//example.org'},
+            headers={},
+            filename=doc_fn,
+            content_type='text/html')
+        return resource_info
+
+    def test_extracts_text_from_node_by_xpath_from_html5_doc(self):
+        resource_info = self._create_resource('html5_doc.html')
+        extracted_value = self.extractor.extract_value(resource_info)
+
+        self.assertEquals(u'Der B\xe4rengraben', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
+
+    def test_extracts_text_from_node_by_xpath_from_xhtml_doc(self):
+        resource_info = self._create_resource('xhtml_doc.html')
+        extracted_value = self.extractor.extract_value(resource_info)
+
+        self.assertEquals(u'Der B\xe4rengraben', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
+
+    def test_selects_first_if_multiple_nodes_match(self):
+        resource_info = self._create_resource('xhtml_doc.html')
+        extractor = XPathExtractor("//p")
+        extracted_value = extractor.extract_value(resource_info)
+
+        self.assertEquals(u'Foo', extracted_value)
+        self.assertIsInstance(extracted_value, unicode)
+
+    def test_raises_if_no_nodes_matched(self):
+        resource_info = self._create_resource('xhtml_doc.html')
+        extractor = XPathExtractor("//doesntexist")
+        with self.assertRaises(NoValueExtracted):
+            extractor.extract_value(resource_info)
 
 
 class TestDescriptionExtractor(CrawlerTestCase):

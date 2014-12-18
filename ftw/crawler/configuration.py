@@ -63,7 +63,7 @@ class Site(object):
 
 class Field(object):
 
-    def __init__(self, name, extractor, type_=str, required=False,
+    def __init__(self, name, extractor, type_=unicode, required=False,
                  multivalued=False):
         self.name = name
         self.extractor = extractor

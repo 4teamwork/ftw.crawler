@@ -4,6 +4,7 @@ from ftw.crawler.utils import ExtendedJSONEncoder
 from ftw.crawler.utils import from_http_datetime
 from ftw.crawler.utils import from_iso_datetime
 from ftw.crawler.utils import get_content_type
+from ftw.crawler.utils import normalize_whitespace
 from ftw.crawler.utils import to_http_datetime
 from ftw.crawler.utils import to_iso_datetime
 from ftw.crawler.utils import to_utc
@@ -95,6 +96,24 @@ class TestFromHTTPDateTime(CrawlerTestCase):
         # Test a date in winter as well to trigger any DST issues
         dt_s = to_utc(datetime(2014, 12, 31, 15, 45, 30))
         self.assertEquals(dt_s, from_http('Wed, 31 Dec 2014 15:45:30 GMT'))
+
+
+class TestNormalizeWhitespace(CrawlerTestCase):
+
+    def test_replaces_tabs_with_space(self):
+        self.assertEquals('x x', normalize_whitespace('x\tx'))
+
+    def test_replaces_cr_with_space(self):
+        self.assertEquals('x x', normalize_whitespace('x\rx'))
+
+    def test_replaces_lf_with_space(self):
+        self.assertEquals('x x', normalize_whitespace('x\nx'))
+
+    def test_strips_leading_and_trailing_whitespace(self):
+        self.assertEquals('x', normalize_whitespace(' \r\n \tx \r\n \t '))
+
+    def test_replaces_multiple_whitespaces_by_one(self):
+        self.assertEquals('a b c', normalize_whitespace('a  b     c'))
 
 
 class TestExtendedJSONEncoder(CrawlerTestCase):

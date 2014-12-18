@@ -1,13 +1,24 @@
+from BeautifulSoup import UnicodeDammit
 from datetime import datetime
 from ftw.crawler.exceptions import ExtractionError
 from ftw.crawler.exceptions import NoValueExtracted
 from ftw.crawler.utils import from_iso_datetime
 from ftw.crawler.utils import get_content_type
+from ftw.crawler.utils import normalize_whitespace
+from ftw.crawler.utils import safe_unicode
+from ftw.crawler.xml_utils import MARKUP_TYPES
+from ftw.crawler.xml_utils import remove_namespaces
+from lxml import etree
 from slugify import slugify
 from urllib import unquote_plus
 from urlparse import urlparse
 from uuid import UUID
 import hashlib
+import logging
+import lxml.html
+
+
+log = logging.getLogger(__name__)
 
 
 class Extractor(object):
@@ -33,6 +44,11 @@ class MetadataExtractor(Extractor):
 
 class TextExtractor(Extractor):
     """Base class for all extractors that extract plain text via Tika.
+    """
+
+
+class TextFromMarkupExtractor(Extractor):
+    """Base class for all extractors that extract text from markup content.
     """
 
 
@@ -64,7 +80,8 @@ class ExtractionEngine(object):
 
     extractor_types = (
         MetadataExtractor, TextExtractor, URLInfoExtractor,
-        ResourceIndependentExtractor, SiteConfigExtractor, HTTPHeaderExtractor
+        ResourceIndependentExtractor, SiteConfigExtractor, HTTPHeaderExtractor,
+        TextFromMarkupExtractor
     )
 
     def __init__(self, config, resource_info, converter):
@@ -74,8 +91,8 @@ class ExtractionEngine(object):
         self.resource_info.metadata = converter.extract_metadata(
             self.resource_info)
 
-        self.resource_info.text = converter.extract_text(
-            self.resource_info)
+        self.resource_info.text = safe_unicode(converter.extract_text(
+            self.resource_info))
 
     def _unkown_extractor_type(self, extractor):
         cls = extractor.__class__
@@ -129,7 +146,7 @@ class ExtractionEngine(object):
 class PlainTextExtractor(TextExtractor):
 
     def extract_value(self, resource_info):
-        return resource_info.text
+        return normalize_whitespace(resource_info.text)
 
 
 class UIDExtractor(URLInfoExtractor):
@@ -138,7 +155,7 @@ class UIDExtractor(URLInfoExtractor):
         url = resource_info.url_info['loc']
         hash_ = hashlib.md5(url)
         uid = UUID(bytes=hash_.digest())
-        return str(uid)
+        return unicode(uid)
 
 
 class SlugExtractor(URLInfoExtractor):
@@ -157,31 +174,40 @@ class SlugExtractor(URLInfoExtractor):
         if basename == '':
             basename = 'index-html'
         slug = self._make_slug(basename)
-        return slug
+        return safe_unicode(slug)
 
 
 class URLExtractor(URLInfoExtractor):
 
     def extract_value(self, resource_info):
-        return resource_info.url_info.get('loc')
+        url = resource_info.url_info.get('loc')
+        return safe_unicode(url)
 
 
 class TargetURLExtractor(URLInfoExtractor):
 
     def extract_value(self, resource_info):
         if 'target' in resource_info.url_info:
-            return resource_info.url_info['target']
+            return safe_unicode(resource_info.url_info['target'])
         else:
             return URLExtractor().extract_value(resource_info)
 
 
 class TitleExtractor(MetadataExtractor, HTTPHeaderExtractor, URLInfoExtractor):
 
-    def extract_value(self, resource_info):
+    def _extract_title(self, resource_info):
         # If present, X-Document-Title header takes precedence
         if 'X-Document-Title' in resource_info.headers:
             header_value = resource_info.headers['X-Document-Title']
-            return header_value.decode('base64').strip()
+            return header_value.decode('base64').decode('utf-8').strip()
+
+        # Next, try to get title from a `div#content h1` element
+        h1_extractor = XPathExtractor("//div[@id='content']/h1")
+        try:
+            value = h1_extractor.extract_value(resource_info)
+            return value
+        except NoValueExtracted:
+            pass
 
         # Next, attempt to get a title from Tika metadata
         value = resource_info.metadata.get('title')
@@ -197,6 +223,67 @@ class TitleExtractor(MetadataExtractor, HTTPHeaderExtractor, URLInfoExtractor):
 
         return value
 
+    def extract_value(self, resource_info):
+        title = self._extract_title(resource_info)
+        return normalize_whitespace(title)
+
+
+class XPathExtractor(TextFromMarkupExtractor, URLInfoExtractor):
+
+    def __init__(self, xpath):
+        self.xpath = xpath
+
+    def _sniff_encoding(self, resource_info):
+        with open(resource_info.filename) as f:
+            data = f.read()
+            proposed = ["utf-8", "latin1"]
+            converted = UnicodeDammit(data, proposed, isHTML=True)
+        del data
+        return converted.originalEncoding
+
+    def _get_tree(self, resource_info, encoding):
+        # Use HTMLParser for everything, even XML / XHTML.
+        if encoding is not None:
+            parser = lxml.html.HTMLParser(encoding=encoding)
+        else:
+            parser = lxml.html.HTMLParser()
+        tree = etree.parse(resource_info.filename, parser)
+        tree = remove_namespaces(tree)
+        return tree
+
+    def extract_value(self, resource_info):
+        if not resource_info.content_type in MARKUP_TYPES:
+            raise NoValueExtracted
+
+        encoding = self._sniff_encoding(resource_info)
+
+        tree = self._get_tree(resource_info, encoding)
+        nodes = tree.xpath(self.xpath)
+
+        if len(nodes) == 0:
+            raise NoValueExtracted
+
+        elif len(nodes) > 1:
+            log.warn(
+                "XPath expression '{}' returned {} results for document at "
+                "{}, using only first one".format(
+                    self.xpath, len(nodes), resource_info.url_info['loc']))
+
+        target_node = nodes[0]
+        text = target_node.text_content()
+
+        if isinstance(text, etree._ElementUnicodeResult):
+            text = unicode(text)
+        elif isinstance(text, etree._ElementStringResult):
+            text = text.decode(encoding)
+        else:
+            log.error(
+                "Unexpected return type for xpath(), expected"
+                "'_ElementUnicodeResult'. (Node: {})".format(target_node))
+            raise NoValueExtracted
+
+        return text
+
 
 class DescriptionExtractor(MetadataExtractor):
 
@@ -204,7 +291,7 @@ class DescriptionExtractor(MetadataExtractor):
         value = resource_info.metadata.get('description')
         if value is None:
             raise NoValueExtracted
-        return value
+        return safe_unicode(value)
 
 
 class CreatorExtractor(MetadataExtractor):
@@ -213,7 +300,7 @@ class CreatorExtractor(MetadataExtractor):
         value = resource_info.metadata.get('creator')
         if value is None:
             raise NoValueExtracted
-        return value
+        return safe_unicode(value)
 
 
 class SnippetTextExtractor(TextExtractor, MetadataExtractor,
@@ -230,14 +317,14 @@ class SnippetTextExtractor(TextExtractor, MetadataExtractor,
         return plain_text.strip()
 
     def extract_value(self, resource_info):
-        plain_text = self._get_plain_text(resource_info)
-        title = self._get_title(resource_info)
+        plain_text = safe_unicode(self._get_plain_text(resource_info))
+        title = safe_unicode(self._get_title(resource_info))
 
         snippet_text = plain_text
         # strip title at start of plain text
         if title is not None and snippet_text.startswith(title):
-            snippet_text = snippet_text.lstrip(title).strip()
-        return snippet_text
+            snippet_text = snippet_text.lstrip(title)
+        return safe_unicode(snippet_text)
 
 
 class LastModifiedExtractor(URLInfoExtractor, HTTPHeaderExtractor):
@@ -269,7 +356,7 @@ class FilenameExtractor(HTTPHeaderExtractor):
                     key, value = [token.strip() for token in item.split('=')]
                     filename = value.replace('"', '')
                     # TODO: Deal with encoding of non-ASCII filenames
-                    return filename
+                    return filename.decode('utf-8', errors='replace')
         raise NoValueExtracted
 
 
@@ -283,7 +370,7 @@ class KeywordsExtractor(MetadataExtractor):
             keywords = value.split(',')
         else:
             keywords = value.split()
-        return [kw.strip() for kw in keywords]
+        return [safe_unicode(kw.strip()) for kw in keywords]
 
 
 class ConstantExtractor(ResourceIndependentExtractor):
@@ -292,7 +379,15 @@ class ConstantExtractor(ResourceIndependentExtractor):
         self.value = value
 
     def extract_value(self, resource_info):
-        return self.value
+        value = self.value
+
+        if isinstance(value, str):
+            value = safe_unicode(value)
+
+        if self.field.multivalued:
+            value = [safe_unicode(v) for v in self.value]
+
+        return value
 
 
 class IndexingTimeExtractor(ResourceIndependentExtractor):
@@ -308,8 +403,13 @@ class SiteAttributeExtractor(SiteConfigExtractor):
 
     def extract_value(self, resource_info):
         value = resource_info.site.attributes.get(self.key)
+
         if value is None:
             raise NoValueExtracted
+
+        if isinstance(value, str):
+            value = safe_unicode(value)
+
         return value
 
 
@@ -322,7 +422,7 @@ class HeaderMappingExtractor(HTTPHeaderExtractor):
 
     def _default_or_raise(self):
         if self.default is not None:
-            return self.default
+            return safe_unicode(self.default)
         else:
             raise NoValueExtracted
 
@@ -336,7 +436,7 @@ class HeaderMappingExtractor(HTTPHeaderExtractor):
             header_value = get_content_type(header_value)
 
         if header_value in self.mapping:
-            return self.mapping[header_value]
+            return safe_unicode(self.mapping[header_value])
         else:
             # Header present but not mapped
             return self._default_or_raise()
@@ -351,7 +451,7 @@ class FieldMappingExtractor(HTTPHeaderExtractor):
 
     def _default_or_raise(self):
         if self.default is not None:
-            return self.default
+            return safe_unicode(self.default)
         else:
             raise NoValueExtracted
 
@@ -363,7 +463,7 @@ class FieldMappingExtractor(HTTPHeaderExtractor):
             return self._default_or_raise()
 
         if field_value in self.mapping:
-            return self.mapping[field_value]
+            return safe_unicode(self.mapping[field_value])
         else:
             # Field present but not mapped
             return self._default_or_raise()

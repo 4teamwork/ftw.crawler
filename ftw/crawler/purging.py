@@ -11,7 +11,7 @@ def purge_removed_docs_from_index(config, sitemap, indexed_docs):
     url_field = config.url_field
     site = sitemap.site
 
-    log.info('Purging removed docs from index for site {}...'.format(site.url))
+    log.info(u'Purging removed docs from index for site {}...'.format(site.url))
     docs_to_purge = []
 
     for doc in indexed_docs:
@@ -21,6 +21,6 @@ def purge_removed_docs_from_index(config, sitemap, indexed_docs):
             docs_to_purge.append((uid, url))
 
     for uid, url in docs_to_purge:
-        log.info('Purging document {} ({}) from Solr'.format(uid, url))
+        log.info(u'Purging document {} ({}) from Solr'.format(uid, url))
         solr.delete(uid)
-    log.info('Done purging.')
+    log.info(u'Done purging.')

@@ -39,6 +39,8 @@ setup(name='ftw.crawler',
           'python-dateutil',
           'pytz',
           'python-slugify',
+          'BeautifulSoup',
+          'chardet',
       ],
 
       tests_require=tests_require,

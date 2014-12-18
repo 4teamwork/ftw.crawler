@@ -45,8 +45,8 @@ class SolrConnector(object):
             self.update_url, data=document, headers=headers)
 
         if not response.status_code == 200:
-            log.error("Error from Solr: Status: {}. Response:\n{}".format(
-                response.status_code, response.content))
+            log.error(u"Error from Solr: Status: {}. Response:\n{}".format(
+                response.status_code, response.text))
         return response
 
     def _search_request(self, query, fl=None):
@@ -61,8 +61,8 @@ class SolrConnector(object):
             self.search_url, params=params, headers=headers)
 
         if not response.status_code == 200:
-            log.error("Error from Solr: Status: {}. Response:\n{}".format(
-                response.status_code, response.content))
+            log.error(u"Error from Solr: Status: {}. Response:\n{}".format(
+                response.status_code, response.text))
             raise SolrError(
                 "Got status {} from Solr.".format(response.status_code))
         return response

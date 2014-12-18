@@ -21,7 +21,7 @@ class TikaConverter(object):
         return response
 
     def extract_metadata(self, resource_info):
-        log.debug("Extracting metadata from '{}' with "
+        log.debug(u"Extracting metadata from '{}' with "
                   "tika JAXRS server.".format(resource_info.filename))
 
         headers = {'Content-type': resource_info.content_type}
@@ -30,13 +30,22 @@ class TikaConverter(object):
         csv_file = io.BytesIO(response.content)
         csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
         metadata = dict(iter(csv_reader))
+
+        # TODO: We assume Tika returns utf-8 encoded metadata
+        for key, value in metadata.items():
+            metadata[key] = value.decode('utf-8')
+
         return SimpleMetadata(metadata)
 
     def extract_text(self, resource_info):
-        log.debug("Extracting plain text from '{}' with "
+        log.debug(u"Extracting plain text from '{}' with "
                   "tika JAXRS server.".format(resource_info.filename))
 
         headers = {'Content-type': resource_info.content_type,
                    'Accept': 'text/plain'}
         response = self._tika_request('tika', resource_info, headers)
-        return response.content
+
+        # Normally we would just use response.text to get the decoded response
+        # body in unicode, but Tika uses UTF-8 *without declaring it*.
+        # See https://issues.apache.org/jira/browse/TIKA-912
+        return response.content.decode('utf-8')

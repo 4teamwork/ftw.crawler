@@ -53,11 +53,11 @@ class ResourceFetcher(object):
         if response.is_redirect:
             # TODO: With redirects it's unclear which URL to use as the
             # canonical URL - so we don't allow them for now.
-            log.warn("URL {} attempted a redirect - skipped.".format(url))
+            log.warn(u"URL {} attempted a redirect - skipped.".format(url))
             raise AttemptedRedirect(url)
 
         if not response.status_code == 200:
-            raise FetchingError("Could not fetch {}. Got status {}".format(
+            raise FetchingError(u"Could not fetch {}. Got status {}".format(
                 url, response.status_code))
 
         with self._mktmp() as resource_file:
@@ -70,5 +70,5 @@ class ResourceFetcher(object):
         resource_info.headers = response.headers
         resource_info.filename = resource_file.name
 
-        log.debug("Resource saved to {}".format(resource_info.filename))
+        log.debug(u"Resource saved to {}".format(resource_info.filename))
         return resource_info

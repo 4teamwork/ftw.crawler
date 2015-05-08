@@ -22,7 +22,7 @@ setup(name='ftw.crawler',
       ],
 
       keywords='crawling extraction solr',
-      author='4teamwork GmbH',
+      author='4teamwork AG',
       author_email='mailto:info@4teamwork.ch',
       url='https://github.com/4teamwork/ftw.crawler',
       license='GPL2',

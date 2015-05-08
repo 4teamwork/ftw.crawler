@@ -172,9 +172,9 @@ To run the crawler against the example configuration:
 Links
 -----
 
-- Main github project repository: https://github.com/4teamwork/ftw.crawler
-- Issue tracker: https://github.com/4teamwork/ftw.crawler/issues
-- Package on pypi: http://pypi.python.org/pypi/ftw.crawler
+- Github: https://github.com/4teamwork/ftw.crawler
+- Issues: https://github.com/4teamwork/ftw.crawler/issues
+- Pypi: http://pypi.python.org/pypi/ftw.crawler
 - Continuous integration: https://jenkins.4teamwork.ch/search?q=ftw.crawler
 
 

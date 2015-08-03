@@ -34,7 +34,7 @@ class TestPurging(SolrTestCase, SitemapTestCase):
             site=dropbox)
 
         purge_removed_docs_from_index(self.config, sitemap, indexed_docs)
-        delete.assertCalledWith(u'2')
+        delete.assert_called_with(u'2')
         self.assertEqual(1, delete.call_count)
 
     @patch('ftw.crawler.solr.SolrConnector.delete')

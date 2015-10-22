@@ -9,9 +9,10 @@ PROPERTIES = ('loc', 'lastmod', 'changefreq', 'priority', 'target')
 
 class SitemapParser(object):
 
-    def __init__(self, xml_data, site=None):
+    def __init__(self, xml_data, site=None, url=None):
         self.xml_data = xml_data
         self.site = site
+        self.url = url
         self._url_infos = None
         self.parse()
 

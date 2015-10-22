@@ -20,7 +20,7 @@ class TestGatherer(CrawlerTestCase):
     def test_finds_and_fetches_sitemap(self, request):
         request.return_value = self.response
         gatherer = URLGatherer('http://example.org/')
-        sitemap_xml = gatherer.fetch_sitemap()
+        url, sitemap_xml = gatherer.fetch_sitemap()
         self.assertEquals(SITEMAP, sitemap_xml)
 
     @patch('requests.get')
@@ -32,7 +32,7 @@ class TestGatherer(CrawlerTestCase):
 
         request.side_effect = lambda url: responses[url]
         gatherer = URLGatherer('http://example.org/')
-        sitemap_xml = gatherer.fetch_sitemap()
+        url, sitemap_xml = gatherer.fetch_sitemap()
 
         self.assertEquals('MARKER', sitemap_xml)
 
@@ -55,7 +55,7 @@ class TestGatherer(CrawlerTestCase):
 
         request.side_effect = lambda url: responses[url]
         gatherer = URLGatherer('http://example.org/')
-        sitemap_xml = gatherer.fetch_sitemap()
+        url, sitemap_xml = gatherer.fetch_sitemap()
 
         self.assertEquals(
             SITEMAP, sitemap_xml,
@@ -67,4 +67,5 @@ class TestGatherer(CrawlerTestCase):
             content='',
             headers={'Content-Type': 'text/html; charset=utf-8'})
         gatherer = URLGatherer('http://example.org/')
-        self.assertEquals('', gatherer.fetch_sitemap())
+        url, sitemap_xml = gatherer.fetch_sitemap()
+        self.assertEquals('', sitemap_xml)

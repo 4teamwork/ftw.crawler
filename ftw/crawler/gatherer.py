@@ -26,8 +26,8 @@ class URLGatherer(object):
 
             if response.status_code == 200:
                 if self.is_gzipped(response):
-                    return self.gunzip(response.content)
-                return response.content
+                    return url, self.gunzip(response.content)
+                return url, response.content
 
         raise FtwCrawlerException(
             "No sitemap could be found for {}!".format(self.site_url))

@@ -36,11 +36,11 @@ def display_fields(field_values):
     log.debug(u"")
 
 
-def get_sitemap(site):
+def get_sitemaps(site):
     gatherer = URLGatherer(site.url)
-    sitemap_xml = gatherer.fetch_sitemap()
-    sitemap = SitemapParser(sitemap_xml, site=site)
-    return sitemap
+    url, sitemap_xml = gatherer.fetch_sitemap()
+    sitemaps = [SitemapParser(sitemap_xml, site=site, url=url)]
+    return sitemaps
 
 
 def get_indexed_docs(config, solr, site):
@@ -68,62 +68,66 @@ def crawl_and_index(tempdir, config, options):
             continue
 
         # Fetch and parse the sitemap
-        sitemap = get_sitemap(site)
+        sitemaps = get_sitemaps(site)
+
+        log.info(u"Crawling {} ({} sitemaps)...".format(
+            site.url, len(sitemaps)))
 
         # Get all docs indexed in Solr for a particular site
-        indexed_docs = get_indexed_docs(config, solr, sitemap.site)
+        indexed_docs = get_indexed_docs(config, solr, site)
 
         # Purge docs that have been removed from sitemap from Solr index
-        purge_removed_docs_from_index(config, sitemap, indexed_docs)
+        purge_removed_docs_from_index(config, sitemaps, indexed_docs, site)
 
         # Create a requests session to allow for connection pooling
         fetcher_session = requests.Session()
 
-        total = len(sitemap.url_infos)
-        log.debug(u"Crawling {}...".format(sitemap.site.url))
+        for sitemap in sitemaps:
+            total = len(sitemap.url_infos)
+            log.info(u"Crawling sitemap {} ...".format(sitemap.url))
 
-        for n, url_info in enumerate(sitemap.url_infos, start=1):
-            url = url_info['loc']
-            progress = '[{}/{}]'.format(n, total)
+            for n, url_info in enumerate(sitemap.url_infos, start=1):
+                url = url_info['loc']
+                progress = '[{}/{}]'.format(n, total)
 
-            # If we're only indexing a specific URL, skip all others
-            if options.url and not url == options.url:
-                continue
+                # If we're only indexing a specific URL, skip all others
+                if options.url and not url == options.url:
+                    continue
 
-            log.debug(u"{}: {}".format(url, unicode(url_info)))
+                log.debug(u"{}: {}".format(url, unicode(url_info)))
 
-            # Get time this document was last indexed
-            last_indexed = get_indexing_time(url, indexed_docs, config)
+                # Get time this document was last indexed
+                last_indexed = get_indexing_time(url, indexed_docs, config)
 
-            # Fetch and save resource
-            resource_info = ResourceInfo(site=sitemap.site,
-                                         url_info=url_info,
-                                         last_indexed=last_indexed)
-            fetcher = ResourceFetcher(
-                resource_info, fetcher_session, tempdir, options)
-            try:
-                resource_info = fetcher.fetch()
-            except NotModified:
-                log.info(u"{}   Skipped {} (not modified)".format(progress, url))
-                continue
-            except AttemptedRedirect:
-                continue
-            except FetchingError, e:
-                log.error(unicode(e))
-                continue
+                # Fetch and save resource
+                resource_info = ResourceInfo(site=sitemap.site,
+                                             url_info=url_info,
+                                             last_indexed=last_indexed)
+                fetcher = ResourceFetcher(
+                    resource_info, fetcher_session, tempdir, options)
+                try:
+                    resource_info = fetcher.fetch()
+                except NotModified:
+                    log.info(u"{}   Skipped {} (not modified)".format(progress, url))
+                    continue
+                except AttemptedRedirect:
+                    continue
+                except FetchingError, e:
+                    log.error(unicode(e))
+                    continue
 
-            # Extract metadata and plain text
-            engine = ExtractionEngine(
-                config, resource_info, converter=TikaConverter(config.tika))
-            field_values = engine.extract_field_values()
-            display_fields(field_values)
-            os.unlink(resource_info.filename)
+                # Extract metadata and plain text
+                engine = ExtractionEngine(
+                    config, resource_info, converter=TikaConverter(config.tika))
+                field_values = engine.extract_field_values()
+                display_fields(field_values)
+                os.unlink(resource_info.filename)
 
-            # Index into Solr
-            log.debug(u"Indexing {} into solr.".format(url))
-            response = solr.index(field_values)
-            if response.status_code == 200:
-                log.info(u"{} * Indexed {}".format(progress, url))
+                # Index into Solr
+                log.debug(u"Indexing {} into solr.".format(url))
+                response = solr.index(field_values)
+                if response.status_code == 200:
+                    log.info(u"{} * Indexed {}".format(progress, url))
 
             log.debug(u"-" * 78)
         log.info(u"=" * 78)

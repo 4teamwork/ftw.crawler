@@ -4,6 +4,7 @@ from ftw.crawler.configuration import get_config
 from ftw.crawler.purging import purge_removed_docs_from_index
 from ftw.crawler.testing import SitemapTestCase
 from ftw.crawler.testing import SolrTestCase
+from mock import call
 from mock import patch
 from pkg_resources import resource_filename
 
@@ -33,7 +34,8 @@ class TestPurging(SolrTestCase, SitemapTestCase):
             urls=['https://www.dropbox.com/download'],
             site=dropbox)
 
-        purge_removed_docs_from_index(self.config, sitemap, indexed_docs)
+        purge_removed_docs_from_index(
+            self.config, [sitemap], indexed_docs, dropbox)
         delete.assert_called_with(u'2')
         self.assertEqual(1, delete.call_count)
 
@@ -51,5 +53,30 @@ class TestPurging(SolrTestCase, SitemapTestCase):
                   'https://www.dropbox.com/about'],
             site=dropbox)
 
-        purge_removed_docs_from_index(self.config, sitemap, indexed_docs)
+        purge_removed_docs_from_index(
+            self.config, [sitemap], indexed_docs, dropbox)
         self.assertEquals(0, delete.call_count)
+
+    @patch('ftw.crawler.solr.SolrConnector.delete')
+    def test_handles_multiple_sitemaps(self, delete):
+        indexed_docs = [
+            {'UID': '1', 'url': 'https://www.dropbox.com/about/team'},
+            {'UID': '2', 'url': 'https://www.dropbox.com/about/partners'},
+            {'UID': '3', 'url': 'https://www.dropbox.com/help/faq'},
+            {'UID': '4', 'url': 'https://www.dropbox.com/help/forum'},
+        ]
+        dropbox = self.config.sites[1]
+
+        sitemap_about = self.create_sitemap(
+            urls=['https://www.dropbox.com/about/team'],
+            site=dropbox)
+
+        sitemap_help = self.create_sitemap(
+            urls=['https://www.dropbox.com/help/faq'],
+            site=dropbox)
+
+        purge_removed_docs_from_index(
+            self.config, [sitemap_about, sitemap_help], indexed_docs, dropbox)
+
+        # Should ONLY remove docs that have disappeared from sitemaps
+        self.assertEqual(delete.mock_calls, [call(u'2'), call(u'4')])

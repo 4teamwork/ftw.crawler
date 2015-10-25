@@ -34,7 +34,7 @@ setup(name='ftw.crawler',
 
       install_requires=[
           'setuptools',
-          'requests',
+          'requests[security]',
           'lxml',
           'python-dateutil',
           'pytz',

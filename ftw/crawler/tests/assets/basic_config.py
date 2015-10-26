@@ -47,7 +47,7 @@ CONFIG = Config(
         Site('http://mailchimp.com',
              attributes={'site_area': 'MailChimp'}),
 
-        Site('http://zg.clex.ch',
+        Site('https://bgs.zg.ch',
              attributes={'site_area': 'Gesetzessammlung'}),
     ],
     unique_field='UID',

@@ -79,8 +79,8 @@ SITEMAP = get_asset('sitemap.xml')
 
 class SitemapTestCase(CrawlerTestCase):
 
-    def create_sitemap(self, urls, site=None, sitemap_url=None):
-        sitemap = Sitemap(SITEMAP, site=site, url=sitemap_url)
+    def create_sitemap(self, urls=None, site=None, sitemap_url=None):
+        sitemap = Sitemap(site, SITEMAP, url=sitemap_url)
         del sitemap.tree
         url_infos = [{'loc': url} for url in urls]
         sitemap._url_infos = url_infos

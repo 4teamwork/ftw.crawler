@@ -38,6 +38,9 @@ SOLR_URL = 'http://localhost:8983/solr'
 
 CONFIG = Config(
     sites=[
+        Site('https://www.sportamt-bern.ch/',
+             attributes={'site_area': 'Sportamt Bern'}),
+
         Site('http://www.sitemapxml.co.uk/',
              attributes={'site_area': 'Sitemap XML'}),
 

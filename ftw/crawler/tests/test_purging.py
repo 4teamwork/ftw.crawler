@@ -24,14 +24,14 @@ class TestPurging(SolrTestCase, SitemapTestCase):
     @patch('ftw.crawler.solr.SolrConnector.delete')
     def test_purges_doc_removed_from_sitemap(self, delete):
         indexed_docs = [
-            {'UID': '1', 'url': 'https://www.dropbox.com/download'},
-            {'UID': '2', 'url': 'https://www.dropbox.com/about'},
+            {'UID': '1', 'url': 'http://www.pctipp.ch/download'},
+            {'UID': '2', 'url': 'http://www.pctipp.ch/about'},
         ]
-        dropbox = self.config.get_site('https://www.dropbox.com/')
+        pctipp = self.config.get_site('http://www.pctipp.ch/')
 
         sitemap = self.create_sitemap(
-            urls=['https://www.dropbox.com/download'],
-            site=dropbox)
+            urls=['http://www.pctipp.ch/download'],
+            site=pctipp)
 
         purge_removed_docs_from_index(self.config, sitemap, indexed_docs)
         delete.assert_called_with(u'2')
@@ -40,16 +40,16 @@ class TestPurging(SolrTestCase, SitemapTestCase):
     @patch('ftw.crawler.solr.SolrConnector.delete')
     def test_doesnt_touch_any_docs_not_starting_with_site_urls(self, delete):
         indexed_docs = [
-            {'UID': '1', 'url': 'https://www.dropbox.com/download'},
-            {'UID': '2', 'url': 'https://www.dropbox.com/about'},
-            {'UID': '3', 'url': 'https://some.com/other/url'},
+            {'UID': '1', 'url': 'http://www.pctipp.ch/download'},
+            {'UID': '2', 'url': 'http://www.pctipp.ch/about'},
+            {'UID': '3', 'url': 'http://some.com/other/url'},
         ]
-        dropbox = self.config.get_site('https://www.dropbox.com/')
+        pctipp = self.config.get_site('http://www.pctipp.ch/')
 
         sitemap = self.create_sitemap(
-            urls=['https://www.dropbox.com/download',
-                  'https://www.dropbox.com/about'],
-            site=dropbox)
+            urls=['http://www.pctipp.ch/download',
+                  'http://www.pctipp.ch/about'],
+            site=pctipp)
 
         purge_removed_docs_from_index(self.config, sitemap, indexed_docs)
         self.assertEquals(0, delete.call_count)

@@ -41,6 +41,9 @@ CONFIG = Config(
         Site('http://www.sitemapxml.co.uk/',
              attributes={'site_area': 'Sitemap XML'}),
 
+        Site('http://www.pctipp.ch/',
+             attributes={'site_area': 'PCtipp'}),
+
         Site('https://www.dropbox.com/',
              attributes={'site_area': 'Dropbox'}),
 

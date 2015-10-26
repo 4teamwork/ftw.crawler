@@ -1,13 +1,13 @@
 from ftw.crawler import parse_args
 from ftw.crawler.configuration import get_config
 from ftw.crawler.exceptions import AttemptedRedirect
+from ftw.crawler.exceptions import FetchingError
 from ftw.crawler.exceptions import NotModified
 from ftw.crawler.extractors import ExtractionEngine
 from ftw.crawler.fetcher import ResourceFetcher
-from ftw.crawler.gatherer import URLGatherer
 from ftw.crawler.purging import purge_removed_docs_from_index
 from ftw.crawler.resource import ResourceInfo
-from ftw.crawler.sitemap import SitemapParser
+from ftw.crawler.sitemap import SitemapFetcher
 from ftw.crawler.solr import solr_escape
 from ftw.crawler.solr import SolrConnector
 from ftw.crawler.tika import TikaConverter
@@ -17,7 +17,6 @@ import os
 import requests
 import shutil
 import tempfile
-from ftw.crawler.exceptions import FetchingError
 
 
 log = logging.getLogger(__name__)
@@ -34,13 +33,6 @@ def display_fields(field_values):
         log.debug(u"{:<22} {}".format(unicode(key) + u':', value))
 
     log.debug(u"")
-
-
-def get_sitemap(site):
-    gatherer = URLGatherer(site.url)
-    sitemap_xml = gatherer.fetch_sitemap()
-    sitemap = SitemapParser(sitemap_xml, site=site)
-    return sitemap
 
 
 def get_indexed_docs(config, solr, site):
@@ -68,10 +60,10 @@ def crawl_and_index(tempdir, config, options):
             continue
 
         # Fetch and parse the sitemap
-        sitemap = get_sitemap(site)
+        sitemap = SitemapFetcher(site).fetch()
 
         # Get all docs indexed in Solr for a particular site
-        indexed_docs = get_indexed_docs(config, solr, sitemap.site)
+        indexed_docs = get_indexed_docs(config, solr, site)
 
         # Purge docs that have been removed from sitemap from Solr index
         purge_removed_docs_from_index(config, sitemap, indexed_docs)
@@ -80,7 +72,7 @@ def crawl_and_index(tempdir, config, options):
         fetcher_session = requests.Session()
 
         total = len(sitemap.url_infos)
-        log.debug(u"Crawling {}...".format(sitemap.site.url))
+        log.debug(u"Crawling {}...".format(sitemap.url))
 
         for n, url_info in enumerate(sitemap.url_infos, start=1):
             url = url_info['loc']

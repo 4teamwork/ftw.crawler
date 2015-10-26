@@ -1,8 +1,11 @@
+from urlparse import urlsplit
 from wsgiref.handlers import format_date_time
 import calendar
 import datetime
 import dateutil.parser
 import errno
+import gzip
+import io
 import json
 import os
 import pytz
@@ -61,6 +64,25 @@ def get_content_type(header_value):
     """
     if header_value is not None:
         return header_value.split(';')[0]
+
+
+def is_gzipped(response):
+    """Determine whether a response's content is gzipped.
+
+    This only considers the Content-Type header and the filename, NOT
+    HTTP compression indicated by the Content-Encoding header, which is
+    handled transparently by the `requests` module.
+    """
+    content_type = get_content_type(response.headers.get('Content-Type'))
+    path = urlsplit(response.request.url).path
+    return content_type == 'application/x-gzip' or path.endswith('.gz')
+
+
+def gunzip(bytestring):
+    """Decompress a gzipped bytestring.
+    """
+    with gzip.GzipFile(mode='rb', fileobj=io.BytesIO(bytestring)) as f:
+        return f.read()
 
 
 class ExtendedJSONEncoder(json.JSONEncoder):

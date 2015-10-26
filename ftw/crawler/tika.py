@@ -29,7 +29,15 @@ class TikaConverter(object):
 
         csv_file = io.BytesIO(response.content)
         csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
-        metadata = dict(iter(csv_reader))
+
+        metadata = {}
+        for item in iter(csv_reader):
+            # In rare cases, Tika returns more than one value per key. So we
+            # just join everything after the key using a space, which won't
+            # change anything for 99% of items that are just key/value pairs.
+            key = item[0]
+            value = ' '.join(item[1:])
+            metadata[key] = value
 
         # TODO: We assume Tika returns utf-8 encoded metadata
         for key, value in metadata.items():

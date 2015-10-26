@@ -44,9 +44,6 @@ CONFIG = Config(
         Site('http://www.pctipp.ch/',
              attributes={'site_area': 'PCtipp'}),
 
-        Site('https://www.dropbox.com/',
-             attributes={'site_area': 'Dropbox'}),
-
         Site('http://mailchimp.com',
              attributes={'site_area': 'MailChimp'}),
 

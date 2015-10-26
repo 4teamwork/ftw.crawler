@@ -1,4 +1,5 @@
 from ftw.crawler.exceptions import NoSuchField
+from ftw.crawler.exceptions import SiteNotFound
 import imp
 import os
 
@@ -46,6 +47,12 @@ class Config(object):
             if field.name == field_name:
                 return field
         raise NoSuchField(field_name)
+
+    def get_site(self, url):
+        for site in self.sites:
+            if site.url == url:
+                return site
+        raise SiteNotFound("Couldn't find site %r in config!" % url)
 
 
 class Site(object):

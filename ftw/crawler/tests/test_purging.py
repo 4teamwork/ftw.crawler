@@ -27,7 +27,7 @@ class TestPurging(SolrTestCase, SitemapTestCase):
             {'UID': '1', 'url': 'https://www.dropbox.com/download'},
             {'UID': '2', 'url': 'https://www.dropbox.com/about'},
         ]
-        dropbox = self.config.sites[1]
+        dropbox = self.config.get_site('https://www.dropbox.com/')
 
         sitemap = self.create_sitemap(
             urls=['https://www.dropbox.com/download'],
@@ -44,7 +44,7 @@ class TestPurging(SolrTestCase, SitemapTestCase):
             {'UID': '2', 'url': 'https://www.dropbox.com/about'},
             {'UID': '3', 'url': 'https://some.com/other/url'},
         ]
-        dropbox = self.config.sites[1]
+        dropbox = self.config.get_site('https://www.dropbox.com/')
 
         sitemap = self.create_sitemap(
             urls=['https://www.dropbox.com/download',

@@ -36,3 +36,13 @@ class AttemptedRedirect(FtwCrawlerException):
 class NotModified(FtwCrawlerException):
     """A resource hasn't been modified since the last time it got indexed.
     """
+
+
+class ConfigError(FtwCrawlerException):
+    """A configuration error occurred.
+    """
+
+
+class SiteNotFound(ConfigError):
+    """The requested site could not be found in the configuration.
+    """

@@ -2,6 +2,7 @@ from argparse import Namespace
 from copy import deepcopy
 from ftw.crawler.configuration import get_config
 from ftw.crawler.purging import purge_removed_docs_from_index
+from ftw.crawler.sitemap import VirtualSitemapIndex
 from ftw.crawler.testing import SitemapTestCase
 from ftw.crawler.testing import SolrTestCase
 from mock import patch
@@ -33,7 +34,9 @@ class TestPurging(SolrTestCase, SitemapTestCase):
             urls=['http://www.pctipp.ch/download'],
             site=pctipp)
 
-        purge_removed_docs_from_index(self.config, sitemap, indexed_docs)
+        sitemap_index = VirtualSitemapIndex(pctipp, sitemaps=[sitemap])
+        purge_removed_docs_from_index(self.config, sitemap_index, indexed_docs)
+
         delete.assert_called_with(u'2')
         self.assertEqual(1, delete.call_count)
 
@@ -51,5 +54,7 @@ class TestPurging(SolrTestCase, SitemapTestCase):
                   'http://www.pctipp.ch/about'],
             site=pctipp)
 
-        purge_removed_docs_from_index(self.config, sitemap, indexed_docs)
+        sitemap_index = VirtualSitemapIndex(pctipp, sitemaps=[sitemap])
+        purge_removed_docs_from_index(self.config, sitemap_index, indexed_docs)
+
         self.assertEquals(0, delete.call_count)

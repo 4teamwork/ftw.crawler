@@ -46,3 +46,8 @@ class ConfigError(FtwCrawlerException):
 class SiteNotFound(ConfigError):
     """The requested site could not be found in the configuration.
     """
+
+
+class NoSitemapFound(FtwCrawlerException):
+    """No sitemap could be found for the given site.
+    """

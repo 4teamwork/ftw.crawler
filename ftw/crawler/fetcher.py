@@ -5,6 +5,7 @@ from ftw.crawler.utils import from_iso_datetime
 from ftw.crawler.utils import get_content_type
 import logging
 import tempfile
+import time
 
 
 log = logging.getLogger(__name__)
@@ -55,6 +56,14 @@ class ResourceFetcher(object):
             # canonical URL - so we don't allow them for now.
             log.warn(u"URL {} attempted a redirect - skipped.".format(url))
             raise AttemptedRedirect(url)
+
+        while response.status_code == 429:
+            log.warn(u"429 Too Many Requests, sleeping for {}s".format(
+                self.resource_info.site.sleeptime))
+            time.sleep(self.resource_info.site.sleeptime)
+            response = self.session.get(url, allow_redirects=False)
+            if response.status_code == 429:
+                self.resource_info.site.sleeptime *= 2
 
         if not response.status_code == 200:
             raise FetchingError(u"Could not fetch {}. Got status {}".format(

@@ -1,4 +1,5 @@
 from datetime import datetime
+from ftw.crawler.configuration import Site
 from ftw.crawler.exceptions import AttemptedRedirect
 from ftw.crawler.exceptions import FetchingError
 from ftw.crawler.exceptions import NotModified
@@ -9,6 +10,8 @@ from ftw.crawler.utils import to_http_datetime
 from ftw.crawler.utils import to_iso_datetime
 from ftw.crawler.utils import to_utc
 from mock import patch
+from testfixtures import LogCapture
+import logging
 import shutil
 import tempfile
 
@@ -56,6 +59,32 @@ class TestResourceFetcher(FetcherTestCase):
         fetcher = self._create_fetcher(resource_info)
         with self.assertRaises(FetchingError):
             fetcher.fetch()
+
+    @patch('requests.sessions.Session.get')
+    def test_sleeps_and_retries_when_too_many_requests(self, request):
+        responses = [
+            MockResponse(status_code=429),
+            MockResponse(status_code=429),
+            MockResponse(content='', headers={'Content-Type': 'text/html'}),
+        ]
+        request.side_effect = lambda url, **kw: responses.pop(0)
+
+        resource_info = ResourceInfo(url_info={'loc': 'http://example.org/'},
+                                     site=Site('http://example.org/'))
+        fetcher = self._create_fetcher(resource_info)
+        logging.disable(logging.INFO)
+        with LogCapture() as log:
+            resource_info = fetcher.fetch()
+
+        log.check(('ftw.crawler.fetcher',
+                   'WARNING',
+                   u'429 Too Many Requests, sleeping for 0.1s'),
+                  ('ftw.crawler.fetcher',
+                   'WARNING',
+                   u'429 Too Many Requests, sleeping for 0.2s'))
+
+        self.assertEquals({'Content-Type': 'text/html'},
+                          resource_info.headers)
 
     @patch('requests.sessions.Session.get')
     def test_raises_if_redirect(self, request):

@@ -57,8 +57,9 @@ class Config(object):
 
 class Site(object):
 
-    def __init__(self, url, attributes=None):
+    def __init__(self, url, attributes=None, sleeptime=0.1):
         self.url = url
+        self.sleeptime = sleeptime
 
         if attributes is None:
             attributes = {}

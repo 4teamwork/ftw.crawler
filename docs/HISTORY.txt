@@ -5,7 +5,7 @@ Changelog
 1.1 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Slow down on too many requests. [jone]
 
 
 1.0 (2015-11-09)

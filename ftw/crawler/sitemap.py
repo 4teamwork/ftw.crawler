@@ -9,8 +9,8 @@ import logging
 import requests
 
 
-SITEMAP_INDEX_NAMES = ('sitemap_index.xml', 'sitemap_index.xml.gz')
-SITEMAP_NAMES = ('sitemap.xml', 'sitemap.xml.gz')
+SITEMAP_INDEX_NAMES = ('', 'sitemap_index.xml', 'sitemap_index.xml.gz')
+SITEMAP_NAMES = ('', 'sitemap.xml', 'sitemap.xml.gz')
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
 PROPERTIES = ('loc', 'lastmod', 'changefreq', 'priority', 'target')
 
@@ -39,7 +39,9 @@ class SitemapIndexFetcher(object):
                 if is_gzipped(response):
                     sitemap_idx_xml = gunzip(sitemap_idx_xml)
 
-                return SitemapIndex(self.site, sitemap_idx_xml, url)
+                index = SitemapIndex(self.site, sitemap_idx_xml, url)
+                if index.is_sitemap_index():
+                    return index
 
         # No sitemap index found - build a virtual one with a single sitemap
         sitemap = SitemapFetcher(self.site).fetch()
@@ -57,6 +59,9 @@ class SitemapIndex(object):
 
         self._sitemap_infos = None
         self._sitemaps = None
+
+    def is_sitemap_index(self):
+        return len(self.tree.xpath('//sitemapindex')) > 0
 
     @property
     def sitemaps(self):
@@ -154,7 +159,9 @@ class SitemapFetcher(object):
                 if is_gzipped(response):
                     sitemap_xml = gunzip(sitemap_xml)
 
-                return Sitemap(self.site, sitemap_xml, url)
+                sitemap = Sitemap(self.site, sitemap_xml, url)
+                if sitemap.is_sitemap():
+                    return sitemap
 
         raise NoSitemapFound(
             "No sitemap found for {}!".format(self.site.url))
@@ -169,6 +176,9 @@ class Sitemap(object):
         self.url = url
         self.tree = self._parse_sitemap_xml(sitemap_xml)
         self._url_infos = None
+
+    def is_sitemap(self):
+        return len(self.tree.xpath('//urlset')) > 0
 
     @property
     def url_infos(self):

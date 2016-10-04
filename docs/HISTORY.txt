@@ -5,6 +5,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Support configuration of absolute sitemap urls. [jone]
+
 - Slow down on too many requests. [jone]
 
 

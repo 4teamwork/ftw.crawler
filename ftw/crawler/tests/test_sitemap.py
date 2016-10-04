@@ -11,6 +11,7 @@ from ftw.crawler.tests.helpers import MockResponse
 from mock import patch
 
 
+XHTML_DOC = get_asset('xhtml_doc.html')
 SITEMAP = get_asset('sitemap.xml')
 SITEMAP_GZ = get_asset('sitemap.xml.gz')
 SITEMAP_REQ_ONLY = get_asset('sitemap_req_only.xml')
@@ -37,6 +38,7 @@ class TestSitemapFetcher(SitemapTestCase):
     @patch('requests.get')
     def test_falls_back_to_gzipped_sitemap(self, request):
         responses = {
+            'http://example.org/': MockResponse(status_code=404),
             'http://example.org/sitemap.xml': MockResponse(
                 status_code=404),
             'http://example.org/sitemap.xml.gz': MockResponse(
@@ -92,9 +94,11 @@ class TestSitemapFetcher(SitemapTestCase):
     @patch('requests.get')
     def test_decompresses_gzipped_sitemap(self, request):
         not_found = MockResponse(status_code=404)
+        html = MockResponse(status_code=200, content=XHTML_DOC)
         found_gz = MockResponse(status_code=200, content=SITEMAP_GZ,
                                 headers={'Content-Type': 'application/x-gzip'})
-        responses = {'http://example.org/sitemap.xml': not_found,
+        responses = {'http://example.org/': html,
+                     'http://example.org/sitemap.xml': not_found,
                      'http://example.org/sitemap.xml.gz': found_gz}
 
         request.side_effect = lambda url: responses[url]
@@ -112,6 +116,20 @@ class TestSitemapFetcher(SitemapTestCase):
             content=SITEMAP,
             headers={'Content-Type': 'text/html; charset=utf-8'})
         sm_fetcher = SitemapFetcher(self.site)
+        sitemap = sm_fetcher.fetch()
+        self.assertEquals(2, len(sitemap.url_infos))
+
+    @patch('requests.get')
+    def test_supports_absolute_sitemap_urls(self, request):
+        responses = {
+            'http://example.org/foo/bar/seitenkarte': MockResponse(
+                status_code=200,
+                content=SITEMAP),
+        }
+        request.side_effect = lambda url: responses[url]
+
+        site = Site('http://example.org/foo/bar/seitenkarte')
+        sm_fetcher = SitemapFetcher(site)
         sitemap = sm_fetcher.fetch()
         self.assertEquals(2, len(sitemap.url_infos))
 
@@ -227,6 +245,7 @@ class TestSitemapIndexFetcher(SitemapTestCase):
     @patch('requests.get')
     def test_falls_back_to_gzipped_sitemap_index(self, request):
         responses = {
+            'http://example.org/': MockResponse(status_code=404),
             'http://example.org/sitemap_index.xml': MockResponse(
                 status_code=404),
             'http://example.org/sitemap_index.xml.gz': MockResponse(
@@ -249,6 +268,9 @@ class TestSitemapIndexFetcher(SitemapTestCase):
             'http://example.org/sitemap.xml': MockResponse(
                 status_code=200,
                 content=SITEMAP),
+            'http://example.org/': MockResponse(
+                status_code=200,
+                content=XHTML_DOC),
         }
         request.side_effect = lambda url, **kwargs: responses[url]
 
@@ -263,7 +285,8 @@ class TestSitemapIndexFetcher(SitemapTestCase):
         not_found = MockResponse(status_code=404)
         found_gz = MockResponse(status_code=200, content=SITEMAP_INDEX_GZ,
                                 headers={'Content-Type': 'application/x-gzip'})
-        responses = {'http://example.org/sitemap_index.xml': not_found,
+        responses = {'http://example.org/': MockResponse(status_code=404),
+                     'http://example.org/sitemap_index.xml': not_found,
                      'http://example.org/sitemap_index.xml.gz': found_gz}
 
         request.side_effect = lambda url, **kwargs: responses[url]
@@ -279,5 +302,19 @@ class TestSitemapIndexFetcher(SitemapTestCase):
             content=SITEMAP_INDEX,
             headers={'Content-Type': 'text/html; charset=utf-8'})
         sm_idx_fetcher = SitemapIndexFetcher(self.site)
+        sitemap_index = sm_idx_fetcher.fetch()
+        self.assertEquals(2, len(sitemap_index.sitemap_infos))
+
+    @patch('requests.get')
+    def test_supports_absolute_sitemap_index_urls(self, request):
+        responses = {
+            'http://example.org/foo/bar/seitenverzeichnisse': MockResponse(
+                status_code=200,
+                content=SITEMAP_INDEX),
+        }
+        request.side_effect = lambda url, **kwargs: responses[url]
+
+        site = Site('http://example.org/foo/bar/seitenverzeichnisse')
+        sm_idx_fetcher = SitemapIndexFetcher(site)
         sitemap_index = sm_idx_fetcher.fetch()
         self.assertEquals(2, len(sitemap_index.sitemap_infos))

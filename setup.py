@@ -7,6 +7,7 @@ tests_require = [
     'unittest2',
     'mock',
     'testfixtures',
+    'slacker',
 ]
 
 setup(name='ftw.crawler',

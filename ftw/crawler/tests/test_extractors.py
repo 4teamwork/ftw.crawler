@@ -82,7 +82,8 @@ class TestExtractionEngine(CrawlerTestCase):
 
     def setUp(self):
         CrawlerTestCase.setUp(self)
-        args = Namespace(tika=None, solr=None)
+        args = Namespace(tika=None, solr=None,
+                         slacktoken=None, slackchannel=None)
         args.config = BASIC_CONFIG
         self.config = deepcopy(get_config(args))
 

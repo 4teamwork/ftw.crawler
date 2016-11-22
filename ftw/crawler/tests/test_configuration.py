@@ -19,6 +19,8 @@ class TestConfig(CrawlerTestCase):
         self.site = Site('http://example.org')
         self.tika = 'http://localhost:9998'
         self.solr = 'http://localhost:8983/solr'
+        self.slacktoken = 'token'
+        self.slackchannel = '#channel'
         self.unique_field = 'UID'
         self.url_field = 'url'
         self.last_modified_field = 'modified'
@@ -26,7 +28,8 @@ class TestConfig(CrawlerTestCase):
 
         self.config = Config([self.site], self.unique_field, self.url_field,
                              self.last_modified_field, [self.field],
-                             self.tika, self.solr)
+                             self.tika, self.solr,
+                             self.slacktoken, self.slackchannel)
 
     def test_config_stores_sites(self):
         self.assertEquals([self.site], self.config.sites)
@@ -36,6 +39,12 @@ class TestConfig(CrawlerTestCase):
 
     def test_config_stores_solr(self):
         self.assertEquals(self.solr, self.config.solr)
+
+    def test_config_stores_slacktoken(self):
+        self.assertEquals(self.slacktoken, self.config.slacktoken)
+
+    def test_config_stores_slackchannel(self):
+        self.assertEquals(self.slackchannel, self.config.slackchannel)
 
     def test_config_stores_unique_field(self):
         self.assertEquals(self.unique_field, self.config.unique_field)
@@ -116,16 +125,20 @@ class TestField(CrawlerTestCase):
 class TestGetConfig(CrawlerTestCase):
 
     def test_get_config_loads_config_module_and_returns_config_instance(self):
-        options = Namespace(tika=None, solr=None)
+        options = Namespace(tika=None, solr=None,
+                            slacktoken=None, slackchannel=None)
         options.config = BASIC_CONFIG
 
         config = get_config(options)
         self.assertIsInstance(config, Config)
 
-    def test_get_config_sets_tika_and_solr_from_command_line(self):
-        options = Namespace(tika='http://tika', solr='http://solr')
+    def test_get_config_sets_arguments_from_command_line(self):
+        options = Namespace(tika='http://tika', solr='http://solr',
+                            slacktoken='token', slackchannel='#channel')
         options.config = BASIC_CONFIG
 
         config = get_config(options)
         self.assertEquals('http://tika', config.tika)
         self.assertEquals('http://solr', config.solr)
+        self.assertEquals('token', config.slacktoken)
+        self.assertEquals('#channel', config.slackchannel)

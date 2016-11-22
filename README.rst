@@ -144,6 +144,25 @@ argument to ``bin/crawl-foo-org``. The crawler will then only fetch and index
 that specific URL.
 
 
+Slack-Notifications
+-------------------
+
+The ``ftw.crawler`` supports Slack-Notifications. Those notifications can be used
+to monitor the crawler on possible errors while crawling.
+To enable slack-notifications for your environment, you need to do the following things:
+
+- Make sure `slacker <https://github.com/os/slacker>`_ is installed in your env.
+- Set the `SLACK_TOKEN` and the `SLACK_CHANNEL` params in your crawler config or
+- use the `--slacktoken` and the `--slackchannel` arguments in the command line when
+  calling the `/crawl` script.
+
+To generate a valid slack token for your integration, you have to create a new bot in
+your slack-team. After you generated the new bot slack will automatically generate a
+valid token for this bot. This token can then be used for your integration.
+You can also generate a test token to test your integration, but don't forget to create
+a bot for this if your application goes to production!
+
+
 Development
 -----------
 

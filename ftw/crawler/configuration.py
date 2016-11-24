@@ -10,12 +10,11 @@ def get_config(options):
     module = imp.load_source(module_name, config_path)
     config = module.CONFIG
 
-    # Command line options for Tika and Solr override config values
+    # Command line overrides for config options
     if options.tika:
         config.tika = options.tika
     if options.solr:
         config.solr = options.solr
-    # Command line options for SlackToken & SlackChannel override config values
     if options.slacktoken:
         config.slacktoken = options.slacktoken
     if options.slackchannel:

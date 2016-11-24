@@ -1,9 +1,15 @@
 import json
+import pkg_resources
+
 
 try:
+    pkg_resources.get_distribution('slacker')
+except pkg_resources.DistributionNotFound:
+    # To use this module you have to install slacker
+    raise ImportError('Please install the extra "slack" to use slack '
+                      'integration')
+else:
     from slacker import Slacker
-except ImportError:
-    raise ImportError
 
 
 class SlackLogger(object):

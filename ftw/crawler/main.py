@@ -16,11 +16,21 @@ import logging
 import os
 import requests
 import shutil
-import sys
 import tempfile
+import pkg_resources
 
 
 log = logging.getLogger(__name__)
+
+
+try:
+    pkg_resources.get_distribution('slacker')
+except pkg_resources.DistributionNotFound:
+    log.info('Not logging errors to slack (slacker not found)')
+    HAS_SLACK = False
+else:
+    from slack import SlackLogger
+    HAS_SLACK = True
 
 
 def display_fields(field_values):
@@ -55,13 +65,8 @@ def get_indexing_time(url, indexed_docs, config):
 def crawl_and_index(tempdir, config, options):
     solr = SolrConnector(config.solr)
 
-    try:
-        from slack import SlackLogger
-        SlackLogger = SlackLogger(options.slacktoken)
-        HAS_SLACK = True
-    except ImportError:
-        log.warning('Slacker not found')
-        HAS_SLACK = False
+    if HAS_SLACK:
+        slacklogger = SlackLogger(options.slacktoken)
 
     for site in config.sites:
         # Skip non-matching sites if we're only indexing a specific URL
@@ -70,14 +75,12 @@ def crawl_and_index(tempdir, config, options):
 
         try:
             crawl_site(tempdir, config, options, solr, site)
-        except KeyboardInterrupt:
-            sys.exit(0)
         except Exception as ex:
             log.error('Failed to crawl {}'.format(site.url))
             log.error('{}: {}'.format(type(ex).__name__, str(ex.message)))
             log.info('Continuing with next site...')
             if HAS_SLACK:
-                SlackLogger.logError(ex, site, options.slackchannel)
+                slacklogger.logError(ex, site, options.slackchannel)
             continue
 
 

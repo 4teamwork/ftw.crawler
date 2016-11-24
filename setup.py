@@ -7,6 +7,10 @@ tests_require = [
     'unittest2',
     'mock',
     'testfixtures',
+    'ftw.crawler [slack]',
+]
+
+slack_requires = [
     'slacker',
 ]
 
@@ -42,11 +46,11 @@ setup(name='ftw.crawler',
           'pytz',
           'python-slugify',
           'BeautifulSoup',
-          'chardet',
+          'chardet'
       ],
 
       tests_require=tests_require,
-      extras_require=dict(tests=tests_require),
+      extras_require=dict(tests=tests_require, slack=slack_requires),
 
       entry_points='''
       [console_scripts]

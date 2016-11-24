@@ -147,11 +147,11 @@ that specific URL.
 Slack-Notifications
 -------------------
 
-The ``ftw.crawler`` supports Slack-Notifications. Those notifications can be used
+``ftw.crawler`` supports Slack-Notifications. Those notifications can be used
 to monitor the crawler on possible errors while crawling.
 To enable slack-notifications for your environment, you need to do the following things:
 
-- Make sure `slacker <https://github.com/os/slacker>`_ is installed in your env.
+- Install ``ftw.crawler`` with the ``slack`` extra.
 - Set the `SLACK_TOKEN` and the `SLACK_CHANNEL` params in your crawler config or
 - use the `--slacktoken` and the `--slackchannel` arguments in the command line when
   calling the `/crawl` script.

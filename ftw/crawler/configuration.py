@@ -10,11 +10,15 @@ def get_config(options):
     module = imp.load_source(module_name, config_path)
     config = module.CONFIG
 
-    # Command line options for Tika and Solr override config values
+    # Command line overrides for config options
     if options.tika:
         config.tika = options.tika
     if options.solr:
         config.solr = options.solr
+    if options.slacktoken:
+        config.slacktoken = options.slacktoken
+    if options.slackchannel:
+        config.slackchannel = options.slackchannel
 
     if not (config.tika and config.solr):
         raise ValueError(
@@ -27,7 +31,8 @@ def get_config(options):
 class Config(object):
 
     def __init__(self, sites, unique_field, url_field, last_modified_field,
-                 fields, tika=None, solr=None):
+                 fields, tika=None, solr=None,
+                 slacktoken=None, slackchannel=None):
         self.sites = sites
         self.unique_field = unique_field
         self.url_field = url_field
@@ -35,6 +40,8 @@ class Config(object):
         self.fields = fields
         self.tika = tika
         self.solr = solr
+        self.slacktoken = slacktoken
+        self.slackchannel = slackchannel
 
         for site in self.sites:
             site.bind(self)

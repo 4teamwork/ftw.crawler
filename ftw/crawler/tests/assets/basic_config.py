@@ -34,6 +34,8 @@ OBJECT_TYPE_MAPPING = {
 # May be overriden via command line arguments
 TIKA_URL = 'http://localhost:9998/'
 SOLR_URL = 'http://localhost:8983/solr'
+SLACK_TOKEN = 'this-is-a-slack-token'
+SLACK_CHANNEL = '#slack-channel'
 
 
 CONFIG = Config(
@@ -113,4 +115,6 @@ CONFIG = Config(
     ],
     tika=TIKA_URL,
     solr=SOLR_URL,
+    slacktoken=SLACK_TOKEN,
+    slackchannel=SLACK_CHANNEL,
 )

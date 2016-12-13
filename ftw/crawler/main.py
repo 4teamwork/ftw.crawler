@@ -8,8 +8,8 @@ from ftw.crawler.fetcher import ResourceFetcher
 from ftw.crawler.purging import purge_removed_docs_from_index
 from ftw.crawler.resource import ResourceInfo
 from ftw.crawler.sitemap import SitemapIndexFetcher
-from ftw.crawler.solr import solr_escape
 from ftw.crawler.solr import SolrConnector
+from ftw.crawler.solr import solr_escape
 from ftw.crawler.tika import TikaConverter
 from ftw.crawler.utils import from_iso_datetime
 import logging
@@ -17,9 +17,20 @@ import os
 import requests
 import shutil
 import tempfile
+import pkg_resources
 
 
 log = logging.getLogger(__name__)
+
+
+try:
+    pkg_resources.get_distribution('slacker')
+except pkg_resources.DistributionNotFound:
+    log.info('Not logging errors to slack (slacker not found)')
+    HAS_SLACK = False
+else:
+    from slack import SlackLogger
+    HAS_SLACK = True
 
 
 def display_fields(field_values):
@@ -54,77 +65,95 @@ def get_indexing_time(url, indexed_docs, config):
 def crawl_and_index(tempdir, config, options):
     solr = SolrConnector(config.solr)
 
+    if HAS_SLACK:
+        slacklogger = SlackLogger(options.slacktoken)
+
     for site in config.sites:
         # Skip non-matching sites if we're only indexing a specific URL
         if options.url and not options.url.startswith(site.url):
             continue
 
-        # Fetch and parse the sitemap index (or build a virtual one)
-        sitemap_index = SitemapIndexFetcher(site).fetch()
+        try:
+            crawl_site(tempdir, config, options, solr, site)
+        except Exception as ex:
+            log.error('Failed to crawl {}'.format(site.url))
+            log.error('{}: {}'.format(type(ex).__name__, str(ex.message)))
+            log.info('Continuing with next site...')
+            if HAS_SLACK:
+                slacklogger.logError(ex, site, options.slackchannel)
+            continue
 
-        log.info(u"Crawling {} [{} sitemap(s)]...".format(
-            site.url, len(sitemap_index.sitemaps)))
 
-        # Get all docs indexed in Solr for a particular site
-        indexed_docs = get_indexed_docs(config, solr, site)
+def crawl_site(tempdir, config, options, solr, site):
+    # Fetch and parse the sitemap index (or build a virtual one)
+    sitemap_index = SitemapIndexFetcher(site).fetch()
 
-        # Purge docs that have been removed from sitemap(s) from Solr index
-        purge_removed_docs_from_index(config, sitemap_index, indexed_docs)
+    log.info(u"Crawling {} [{} sitemap(s)]...".format(
+        site.url, len(sitemap_index.sitemaps)))
 
-        # Create a requests session to allow for connection pooling
-        fetcher_session = requests.Session()
+    # Get all docs indexed in Solr for a particular site
+    indexed_docs = get_indexed_docs(config, solr, site)
 
-        for sitemap in sitemap_index.sitemaps:
-            total = len(sitemap.url_infos)
+    # Purge docs that have been removed from sitemap(s) from Solr index
+    purge_removed_docs_from_index(config, sitemap_index, indexed_docs)
 
-            log.info(u"-" * 78)
-            log.info(u"Crawling {}...".format(sitemap.url))
+    # Create a requests session to allow for connection pooling
+    fetcher_session = requests.Session()
 
-            for n, url_info in enumerate(sitemap.url_infos, start=1):
-                url = url_info['loc']
-                progress = '[{}/{}]'.format(n, total)
+    for sitemap in sitemap_index.sitemaps:
+        total = len(sitemap.url_infos)
 
-                # If we're only indexing a specific URL, skip all others
-                if options.url and not url == options.url:
-                    continue
+        log.info(u"-" * 78)
+        log.info(u"Crawling {}...".format(sitemap.url))
 
-                log.debug(u"{}: {}".format(url, unicode(url_info)))
+        for n, url_info in enumerate(sitemap.url_infos, start=1):
+            url = url_info['loc']
+            progress = '[{}/{}]'.format(n, total)
 
-                # Get time this document was last indexed
-                last_indexed = get_indexing_time(url, indexed_docs, config)
+            # If we're only indexing a specific URL, skip all others
+            if options.url and not url == options.url:
+                continue
 
-                # Fetch and save resource
-                resource_info = ResourceInfo(site=sitemap.site,
-                                             url_info=url_info,
-                                             last_indexed=last_indexed)
-                fetcher = ResourceFetcher(
-                    resource_info, fetcher_session, tempdir, options)
-                try:
-                    resource_info = fetcher.fetch()
-                except NotModified:
-                    log.info(u"{}   Skipped {} (not modified)".format(progress, url))
-                    continue
-                except AttemptedRedirect:
-                    continue
-                except FetchingError, e:
-                    log.error(unicode(e))
-                    continue
+            log.debug(u"{}: {}".format(url, unicode(url_info)))
 
-                # Extract metadata and plain text
-                engine = ExtractionEngine(
-                    config, resource_info, converter=TikaConverter(config.tika))
-                field_values = engine.extract_field_values()
-                display_fields(field_values)
-                os.unlink(resource_info.filename)
+            # Get time this document was last indexed
+            last_indexed = get_indexing_time(url, indexed_docs, config)
 
-                # Index into Solr
-                log.debug(u"Indexing {} into solr.".format(url))
-                response = solr.index(field_values)
-                if response.status_code == 200:
-                    log.info(u"{} * Indexed {}".format(progress, url))
+            # Fetch and save resource
+            resource_info = ResourceInfo(site=sitemap.site,
+                                         url_info=url_info,
+                                         last_indexed=last_indexed)
+            fetcher = ResourceFetcher(
+                resource_info, fetcher_session, tempdir, options)
+            try:
+                resource_info = fetcher.fetch()
+            except NotModified:
+                log.info(u"{}   Skipped {} (not modified)".format(progress,
+                                                                  url))
+                continue
+            except AttemptedRedirect:
+                continue
+            except FetchingError, e:
+                log.error(unicode(e))
+                continue
+            except Exception as ex:
+                print ex
 
-        log.info(u"=" * 78)
-        log.info(u"")
+            # Extract metadata and plain text
+            engine = ExtractionEngine(
+                config, resource_info, converter=TikaConverter(config.tika))
+            field_values = engine.extract_field_values()
+            display_fields(field_values)
+            os.unlink(resource_info.filename)
+
+            # Index into Solr
+            log.debug(u"Indexing {} into solr.".format(url))
+            response = solr.index(field_values)
+            if response.status_code == 200:
+                log.info(u"{} * Indexed {}".format(progress, url))
+
+    log.info(u"=" * 78)
+    log.info(u"")
 
 
 def main():

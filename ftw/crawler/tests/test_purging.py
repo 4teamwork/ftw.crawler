@@ -17,7 +17,8 @@ class TestPurging(SolrTestCase, SitemapTestCase):
     def setUp(self):
         SolrTestCase.setUp(self)
         SitemapTestCase.setUp(self)
-        args = Namespace(tika=None, solr=None)
+        args = Namespace(tika=None, solr=None,
+                         slacktoken=None, slackchannel=None)
         args.config = BASIC_CONFIG
         self.config = deepcopy(get_config(args))
         self.config.url_field = 'url'

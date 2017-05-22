@@ -54,6 +54,9 @@ CONFIG = Config(
 
         Site('https://bgs.zg.ch',
              attributes={'site_area': 'Gesetzessammlung'}),
+
+        Site('https://dummy.kanton.ch/some_index.php?id=123456',
+             attributes={'site_area': 'Kanton'}),
     ],
     unique_field='UID',
     url_field='path_string',

@@ -5,6 +5,9 @@ Changelog
 1.1.1 (unreleased)
 ------------------
 
+- Use url base (scheme, netloc) for purge query.
+  [mathias.leimgruber]
+
 - Support Slack notifications.
   [raphael-s]
 

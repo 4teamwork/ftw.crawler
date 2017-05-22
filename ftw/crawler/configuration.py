@@ -1,5 +1,6 @@
 from ftw.crawler.exceptions import NoSuchField
 from ftw.crawler.exceptions import SiteNotFound
+from urlparse import urlparse
 import imp
 import os
 
@@ -74,6 +75,11 @@ class Site(object):
 
     def bind(self, config):
         self.config = config
+
+    @property
+    def base_url(self):
+        parsed_url = urlparse(self.url)
+        return '{url.scheme}://{url.netloc}'.format(url=parsed_url)
 
 
 class Field(object):

@@ -47,7 +47,7 @@ def display_fields(field_values):
 
 
 def get_indexed_docs(config, solr, site):
-    query = '{}:{}*'.format(config.url_field, solr_escape(site.url))
+    query = '{}:{}*'.format(config.url_field, solr_escape(site.base_url))
     indexed_docs = solr.search(
         query,
         fl=(config.unique_field, config.url_field, config.last_modified_field))

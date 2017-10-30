@@ -5,7 +5,8 @@ Changelog
 1.2.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Encode URL in UTF-8 before generating MD5-Hash.
+  [raphael-s]
 
 
 1.2.0 (2017-06-22)

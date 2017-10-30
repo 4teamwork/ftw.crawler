@@ -153,7 +153,7 @@ class UIDExtractor(URLInfoExtractor):
 
     def extract_value(self, resource_info):
         url = resource_info.url_info['loc']
-        hash_ = hashlib.md5(url)
+        hash_ = hashlib.md5(url.encode("utf-8"))
         uid = UUID(bytes=hash_.digest())
         return unicode(uid)
 

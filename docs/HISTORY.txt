@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-1.2.1 (unreleased)
+1.2.1 (2017-10-30)
 ------------------
 
 - Encode URL in UTF-8 before generating MD5-Hash.

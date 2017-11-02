@@ -64,9 +64,11 @@ class Config(object):
 
 class Site(object):
 
-    def __init__(self, url, attributes=None, sleeptime=0.1):
+    def __init__(self, url, attributes=None, sleeptime=0.1,
+                 sitemap_urls=None):
         self.url = url
         self.sleeptime = sleeptime
+        self.sitemap_urls = sitemap_urls
 
         if attributes is None:
             attributes = {}

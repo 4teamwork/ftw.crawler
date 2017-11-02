@@ -136,6 +136,18 @@ forwarded to ``bin/crawl``.
 Therefore running ``bin/crawl-foo-org [args]`` is equivalent to
 ``bin/crawl foo_org_config.py [args]``.
 
+Provide known sitemap urls in site configs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you know the sitemap url, you can configure one or many sitemap urls
+statically:
+
+.. code:: python
+
+    Site('http://example.org/foo/',
+         sitemap_urls=['http://example.org/foo/the_sitemap.xml'])
+
+
 Indexing only a particular URL
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

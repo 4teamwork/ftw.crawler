@@ -2,11 +2,14 @@ Changelog
 =========
 
 
-1.2.2 (unreleased)
+1.3.0 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Fix purging problem.
+  Warning: updating "ftw.crawler" to this version breaks your existing crawlers
+  when you set the site url to a sitemap url. Please use the "sitemap_urls"
+  attribute instead. You also need to purge the Solr index manually and reindex.
+  [jone]
 
 1.2.1 (2017-10-30)
 ------------------

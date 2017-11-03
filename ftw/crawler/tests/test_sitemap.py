@@ -119,20 +119,6 @@ class TestSitemapFetcher(SitemapTestCase):
         sitemap = sm_fetcher.fetch()
         self.assertEquals(2, len(sitemap.url_infos))
 
-    @patch('requests.get')
-    def test_supports_absolute_sitemap_urls(self, request):
-        responses = {
-            'http://example.org/foo/bar/seitenkarte': MockResponse(
-                status_code=200,
-                content=SITEMAP),
-        }
-        request.side_effect = lambda url: responses[url]
-
-        site = Site('http://example.org/foo/bar/seitenkarte')
-        sm_fetcher = SitemapFetcher(site)
-        sitemap = sm_fetcher.fetch()
-        self.assertEquals(2, len(sitemap.url_infos))
-
 
 class TestSitemap(SitemapTestCase):
 
@@ -308,13 +294,18 @@ class TestSitemapIndexFetcher(SitemapTestCase):
     @patch('requests.get')
     def test_supports_absolute_sitemap_index_urls(self, request):
         responses = {
-            'http://example.org/foo/bar/seitenverzeichnisse': MockResponse(
+            'http://example.org/foo/bar/sitemap1.xml': MockResponse(
+                status_code=200,
+                content=SITEMAP_INDEX),
+            'http://example.org/foo/bar/sitemap2.xml': MockResponse(
                 status_code=200,
                 content=SITEMAP_INDEX),
         }
         request.side_effect = lambda url, **kwargs: responses[url]
 
-        site = Site('http://example.org/foo/bar/seitenverzeichnisse')
+        site = Site('http://example.org/foo/',
+                    sitemap_urls=['http://example.org/foo/bar/sitemap1.xml',
+                                  'http://example.org/foo/bar/sitemap2.xml'])
         sm_idx_fetcher = SitemapIndexFetcher(site)
         sitemap_index = sm_idx_fetcher.fetch()
-        self.assertEquals(2, len(sitemap_index.sitemap_infos))
+        self.assertEquals(2, len(sitemap_index.sitemaps))

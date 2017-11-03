@@ -9,8 +9,8 @@ import logging
 import requests
 
 
-SITEMAP_INDEX_NAMES = ('', 'sitemap_index.xml', 'sitemap_index.xml.gz')
-SITEMAP_NAMES = ('', 'sitemap.xml', 'sitemap.xml.gz')
+SITEMAP_INDEX_NAMES = ('sitemap_index.xml', 'sitemap_index.xml.gz')
+SITEMAP_NAMES = ('sitemap.xml', 'sitemap.xml.gz')
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
 PROPERTIES = ('loc', 'lastmod', 'changefreq', 'priority', 'target')
 
@@ -29,6 +29,10 @@ class SitemapIndexFetcher(object):
         returning a ``SitemapIndex`` object.
         """
         log.info(u'Fetching sitemap index for {}'.format(self.site.url))
+        if self.site.sitemap_urls:
+            sitemaps = map(SitemapFetcher(self.site).fetch, self.site.sitemap_urls)
+            return VirtualSitemapIndex(self.site, sitemaps=sitemaps)
+
         for sm_idx_name in SITEMAP_INDEX_NAMES:
             url = urljoin(self.site.url, sm_idx_name)
             response = requests.get(url, allow_redirects=False)
@@ -121,6 +125,10 @@ class VirtualSitemapIndex(SitemapIndex):
         self.site = site
         self._sitemaps = sitemaps
         self.url = url
+
+    @property
+    def sitemaps(self):
+        return self._sitemaps
 
     @property
     def sitemap_infos(self):

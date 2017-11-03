@@ -59,3 +59,22 @@ class TestPurging(SolrTestCase, SitemapTestCase):
         purge_removed_docs_from_index(self.config, sitemap_index, indexed_docs)
 
         self.assertEquals(0, delete.call_count)
+
+    @patch('ftw.crawler.solr.SolrConnector.delete')
+    def test_get_docs_by_scheme_and_netloc(self, delete):
+        indexed_docs = [
+            {'UID': '1', 'url': 'https://dummy.kanton.ch/download'},
+            {'UID': '2', 'url': 'https://dummy.kanton.ch/about'},
+            {'UID': '3', 'url': 'https://dummy.kantons.ch/url'},
+        ]
+        dummy = self.config.get_site(
+            'https://dummy.kanton.ch/some_index.php?id=123456')
+
+        sitemap = self.create_sitemap(
+            urls=['https://dummy.kantons.ch/url'],
+            site=dummy)
+
+        sitemap_index = VirtualSitemapIndex(dummy, sitemaps=[sitemap])
+        purge_removed_docs_from_index(self.config, sitemap_index, indexed_docs)
+
+        self.assertEquals(2, delete.call_count)

@@ -27,6 +27,9 @@ Changelog
 1.2.0 (2017-06-22)
 ------------------
 
+- Use url base (scheme, netloc) for purge query.
+  [mathias.leimgruber]
+
 - Support Slack notifications.
   [raphael-s]
 

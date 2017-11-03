@@ -17,8 +17,7 @@ def purge_removed_docs_from_index(config, sitemap_index, indexed_docs):
     for doc in indexed_docs:
         url = doc[url_field]
         uid = doc[unique_field]
-
-        url_in_site = url.startswith(site.url)
+        url_in_site = url.startswith(site.base_url)
         url_in_any_sitemap = any(url in sm for sm in sitemap_index.sitemaps)
 
         if url_in_site and not url_in_any_sitemap:

@@ -47,7 +47,11 @@ def display_fields(field_values):
 
 
 def get_indexed_docs(config, solr, site):
-    query = '{}:{}*'.format(config.url_field, solr_escape(site.url))
+    if site.crawler_site_id is not None:
+        query = 'crawler_site_id:{}'.format(site.crawler_site_id)
+    else:
+        query = '{}:{}*'.format(config.url_field, solr_escape(site.url))
+
     indexed_docs = solr.search(
         query,
         fl=(config.unique_field, config.url_field, config.last_modified_field))
@@ -145,6 +149,8 @@ def crawl_site(tempdir, config, options, solr, site):
             field_values = engine.extract_field_values()
             display_fields(field_values)
             os.unlink(resource_info.filename)
+            if site.crawler_site_id:
+                field_values['crawler_site_id'] = site.crawler_site_id
 
             # Index into Solr
             log.debug(u"Indexing {} into solr.".format(url))

@@ -5,8 +5,7 @@ Changelog
 1.3.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Add crawler_site_id option for improving purging. [jone]
 
 1.3.0 (2017-11-03)
 ------------------

@@ -148,6 +148,22 @@ statically:
          sitemap_urls=['http://example.org/foo/the_sitemap.xml'])
 
 
+Configure site ID for purging
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In order for the purging to work smoothly it is recommend to configure a
+crawler site ID.
+Make sure that each site ID is unique per solr core!
+Candidate documents for purging will be identified by this crawler site id.
+
+.. code:: python
+
+    Site('http://example.org/',
+         crawler_site_id='example.org-news')
+
+Be aware that your solr core must provide a string-field ``crawler_site_id``.
+
+
 Indexing only a particular URL
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

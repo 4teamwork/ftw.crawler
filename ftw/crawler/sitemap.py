@@ -12,7 +12,8 @@ import requests
 SITEMAP_INDEX_NAMES = ('sitemap_index.xml', 'sitemap_index.xml.gz')
 SITEMAP_NAMES = ('sitemap.xml', 'sitemap.xml.gz')
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
-PROPERTIES = ('loc', 'lastmod', 'changefreq', 'priority', 'target')
+PROPERTIES = ('loc', 'lastmod', 'changefreq', 'priority', 'target',
+              'loc_title', 'loc_desc')
 
 log = logging.getLogger(__name__)
 

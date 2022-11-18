@@ -6,6 +6,7 @@ from ftw.crawler.utils import get_content_type
 import logging
 import tempfile
 import time
+import os
 
 
 log = logging.getLogger(__name__)
@@ -45,6 +46,11 @@ class ResourceFetcher(object):
     def fetch(self):
         resource_info = self.resource_info
         url = self.url_info['loc']
+
+        if self.resource_info.site.url == 'https://gisbern-test.bgov.ch':
+            URL = os.environ.get('GEOPORTAL_URL')
+            PUBLIC_URL = os.environ.get('GEOPORTAL_PUBLIC_URL', URL)
+            url = url.replace(PUBLIC_URL, URL)
 
         modified = self.is_modified()
         if not self.options.force and not modified:

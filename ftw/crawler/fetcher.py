@@ -47,7 +47,7 @@ class ResourceFetcher(object):
         resource_info = self.resource_info
         url = self.url_info['loc']
 
-        if self.resource_info.site.url == 'https://gisbern-test.bgov.ch':
+        if self.resource_info.site.url in ['https://gisbern-test.bgov.ch', 'https://gisbern-web.bgov.ch', 'https://gwa0015.bgov.ch']:
             URL = os.environ.get('GEOPORTAL_URL')
             PUBLIC_URL = os.environ.get('GEOPORTAL_PUBLIC_URL', URL)
             url = url.replace(PUBLIC_URL, URL)

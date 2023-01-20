@@ -56,7 +56,7 @@ class ResourceFetcher(object):
         if not self.options.force and not modified:
             raise NotModified
 
-        response = self.session.get(url, allow_redirects=False)
+        response = self.session.get(url, allow_redirects=False, verify=False)
         if response.is_redirect:
             # TODO: With redirects it's unclear which URL to use as the
             # canonical URL - so we don't allow them for now.
@@ -67,7 +67,7 @@ class ResourceFetcher(object):
             log.warn(u"429 Too Many Requests, sleeping for {}s".format(
                 self.resource_info.site.sleeptime))
             time.sleep(self.resource_info.site.sleeptime)
-            response = self.session.get(url, allow_redirects=False)
+            response = self.session.get(url, allow_redirects=False, verify=False)
             if response.status_code == 429:
                 self.resource_info.site.sleeptime *= 2
 

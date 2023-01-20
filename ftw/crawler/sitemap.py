@@ -36,7 +36,7 @@ class SitemapIndexFetcher(object):
 
         for sm_idx_name in SITEMAP_INDEX_NAMES:
             url = urljoin(self.site.url, sm_idx_name)
-            response = requests.get(url, allow_redirects=False)
+            response = requests.get(url, allow_redirects=False, verify=False)
 
             if response.status_code == 200:
                 sitemap_idx_xml = response.content
@@ -150,7 +150,7 @@ class SitemapFetcher(object):
         if url is not None:
             # We're given an URL to a sitemap, don't do any discovery
             log.info(u'Fetching sitemap {}'.format(url))
-            response = requests.get(url)
+            response = requests.get(url, verify=False)
             sitemap_xml = response.content
             if is_gzipped(response):
                 sitemap_xml = gunzip(sitemap_xml)
@@ -160,7 +160,7 @@ class SitemapFetcher(object):
         log.info(u'Fetching sitemap for {}'.format(self.site.url))
         for sm_name in SITEMAP_NAMES:
             url = urljoin(self.site.url, sm_name)
-            response = requests.get(url)
+            response = requests.get(url, verify=False)
 
             if response.status_code == 200:
                 sitemap_xml = response.content
